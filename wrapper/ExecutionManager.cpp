@@ -230,6 +230,25 @@ namespace android {
 		} else return -1;
 	}
 
+	void ExecutionManager::addArray(jarray jarr, int length, int dalvikP) {
+		ALOGD("addArray(jarray=%08x, length=%d, dalvikP=%08x)", jarr, length, dalvikP);
+		arrayList_t* newArray = (arrayList_t*)malloc(sizeof(arrayList_t));
+		if (arrayList == 0) { //no array added yet
+			*newArray = {jarr, length, dalvikP, 0};
+		} else { // push in front of other arrays
+			*newArray = {jarr, length, dalvikP, arrayList};
+		}
+		arrayList = newArray;
+	}
+
+	arrayList_t* ExecutionManager::getArrayLength(jarray jarr) {
+		if (arrayList == 0) return NULL;
+		arrayList_t* s = arrayList;
+		while (s->jarr != jarr && s->next != 0) s = s->next;
+		if (s->jarr == jarr) return s;
+		else return NULL;
+	}
+
 	void ExecutionManager::addStringChars(int dalvikP, int length, const jchar* wrapperP) {
 		ALOGD("addStringChars(dalvikP=%08x, length=%08x, wrapperP=%s)", dalvikP, length, wrapperP);
 		stringMap_t* newCharsEntry = (stringMap_t*)malloc(sizeof(stringMap_t));

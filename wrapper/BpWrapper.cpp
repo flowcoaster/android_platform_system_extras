@@ -28,10 +28,12 @@ namespace android{
 		const char* chars = jniEnv->GetStringUTFChars(jstr, &isCopy);
 		ALOGD("GetStringUTFChars returns %s; sizeof(*chars)=%d; strlen(chars)=%d",
 			chars, sizeof(*chars), strlen(chars));
-		size = sizeof(*chars)*strlen(chars)+1;
+		//size = sizeof(*chars)*strlen(chars)+1;
+		size = 8*strlen(chars)+1;
 		taintsize = 0;
-		callbackdata = malloc(size); //freed by CALLBACK
-		memcpy(callbackdata, chars, size);
+		callbackdata = malloc(size+sizeof(char*)); //freed by CALLBACK
+		memcpy(callbackdata, &chars, sizeof(char*));
+		memcpy(callbackdata+sizeof(char*), chars, size);
 	}
 
 	void BpWrapper::callNewStringUTF() {
@@ -456,6 +458,20 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+	void BpWrapper::callSetStaticLongField() {
+		jclass jc = *((jclass*)replydata);
+		void* r2 = replydata+sizeof(jc);
+		jfieldID fieldID = *((jfieldID*)r2);
+		r2 += sizeof(fieldID);
+		jlong value = *((jlong*)r2);
+		//r2 += sizeof(value);
+		//u4 taint = *((u4*)r2);
+		ALOGD("SetStaticLongTaintedField: Field %08x to %08x", (int)fieldID, (int)value);
+		jniEnv->SetStaticLongField(jc, fieldID, value);
+		size = 0;
+		callbackdata = malloc(size);
+	}
+
 	void BpWrapper::callGetObjectClass() {
 		jobject jobj = *((jobject*)replydata);
 		jclass result = jniEnv->GetObjectClass(jobj);
@@ -586,6 +602,17 @@ namespace android{
 		memcpy(callbackdata, &result, size);
 	}
 
+	void BpWrapper::callCallFloatMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(methodID));
+		jfloat result = jniEnv->CallFloatMethodA(jobj, methodID, args);
+		size = sizeof(result);
+		taintsize = 0;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
 	void BpWrapper::callCallObjectMethod() {
 		jobject jobj = *((jobject*)replydata);
 		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)));
@@ -676,7 +703,7 @@ namespace android{
 		ALOGD("GetStringChars: isCopy=%08x", isCopy);
 		const jchar* result = jniEnv->GetStringChars(jstr, &isCopy);
 		//ALOGD("GetStringChars: %08x -> %s", result, *result);
-		ALOGD("GetStringChars: %08x", result);
+		ALOGD("GetStringChars: %08x", (int)result);
 		int strlen = jniEnv->GetStringLength(jstr);
 		size = sizeof(jchar*)+sizeof(int)+strlen*sizeof(jchar);
 		taintsize = 0;
@@ -708,6 +735,15 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+	void BpWrapper::callFromReflectedMethod() {
+		jobject jmethod = *((jobject*)replydata);
+		jmethodID result = jniEnv->FromReflectedMethod(jmethod);
+		size = sizeof(result);
+		taintsize = 0;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
 	void BpWrapper::callFromReflectedField() {
 		jobject jfield = *((jobject*)replydata);
 		jfieldID result = jniEnv->FromReflectedField(jfield);
@@ -726,6 +762,84 @@ namespace android{
 		taintsize = 0;
 		callbackdata = malloc(size);
 		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callToReflectedMethod() {
+		jclass jc = *((jclass*)replydata);
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
+		jobject result = jniEnv->ToReflectedMethod(jc, methodID, 0);
+		size = sizeof(result);
+		taintsize = 0;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callToReflectedField() {
+		jclass jc = *((jclass*)replydata);
+		jfieldID fieldID = *((jfieldID*)(replydata+sizeof(jc)));
+		jobject result = jniEnv->ToReflectedField(jc, fieldID, 0);
+		size = sizeof(result);
+		taintsize = 0;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callGetPrimitiveArrayCritical() {
+		jarray jarr = *((jarray*)replydata);
+		jboolean fake = 0;
+		//ALOGD("GetPrimitiveArrayCritical: jarr=%08x", jarr);
+		const char* sig = jniEnv->GetArrayType(jarr);
+		ALOGD("GetPrimitiveArrayCritical: array type = %s", sig);
+		int elementSize = 0;
+		switch (sig[1]) {
+			case 'B':
+			case 'C':
+			case 'S':
+			case 'I':
+			case 'J':
+			case 'F': elementSize = sizeof(jint); break;
+			case 'L':
+			case 'D': elementSize = sizeof(jlong); break;
+			default: ALOGE("Unknown array type: %c; cannot determine size.", sig[1]);
+		}
+		void* result = jniEnv->GetPrimitiveArrayCritical(jarr, &fake);
+		ALOGD("dalvik void pointer: %08x", (int)result);
+		size = jniEnv->GetArrayLength(jarr)*elementSize;
+		taintsize = 0;
+		callbackdata = malloc(size + sizeof(size) + sizeof(result));
+		memcpy(callbackdata, &size, sizeof(size));
+		memcpy(callbackdata+sizeof(size), &result, sizeof(result));
+		memcpy(callbackdata+sizeof(size)+sizeof(result), result, size);
+	}
+
+	void BpWrapper::callReleasePrimitiveArrayCritical() {
+		jarray jarr = *((jarray*)replydata);
+		int size = *((int*)(replydata + sizeof(jarr)));
+		void* dalvikP = replydata + sizeof(jarr) + sizeof(int);
+		int dalvikPP = *((int*)(replydata+sizeof(jarr)+sizeof(int)));
+		dalvikP = (void*)dalvikPP;
+		void* data = replydata + sizeof(jarr) + 2*sizeof(int);
+		ALOGD("callReleasePrimitiveArrayCritical: jarr=%08x, size=%d, dalvikP=%08x, dalvikPP=%08x, data=%08x",
+			(int)jarr, size, (int)dalvikP, dalvikPP, (int)data);
+		jshort* iarr = (jshort*)data;
+		ALOGD("i[0]=%d, i[1]=%d, i[2]=%d, i[3]=%d, i[4]=%d, i[5]=%d, i[6]=%d",
+			iarr[0], iarr[1], iarr[2], iarr[3], iarr[4], iarr[5], iarr[6]);
+		memcpy(dalvikP, data, size);
+		jniEnv->ReleasePrimitiveArrayCritical(jarr, data, 2);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callReleaseStringUTFChars() {
+		char* dalvikP = (char*)(*((int*)replydata));
+		int length = *((int*)(replydata+sizeof(int)));
+		jstring jstr = *((jstring*)(replydata+2*sizeof(int)));
+		char* utf = (char*)(replydata+2*sizeof(int)+sizeof(jstring));
+		ALOGD("ReleaseStringUTFChars received dalvikP=%08x, length=%d, utf=%s", (int)dalvikP, length, utf);
+		memcpy(dalvikP, utf, length*sizeof(char));
+		jniEnv->ReleaseStringUTFChars(jstr, dalvikP);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
 	}
 
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
@@ -800,6 +914,14 @@ namespace android{
 			case 57: callReleaseStringCritical(); break;
 			case 58: callFromReflectedField(); break;
 			case 59: callNewObjectA(); break;
+			case 60: callSetStaticLongField(); break;
+			case 61: callToReflectedMethod(); break;
+			case 62: callCallFloatMethodA(); break;
+			case 63: callToReflectedField(); break;
+			case 64: callFromReflectedMethod(); break;
+			case 65: callGetPrimitiveArrayCritical(); break;
+			case 66: callReleasePrimitiveArrayCritical(); break;
+			case 67: callReleaseStringUTFChars(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);

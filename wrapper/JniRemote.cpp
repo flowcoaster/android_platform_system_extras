@@ -46,6 +46,18 @@ static jclass FindClass(JNIEnvMod* env, const char* name) {
     return resultClass;
 }
 
+//code 64
+static jmethodID FromReflectedMethod(JNIEnvMod* env, jobject jmethod) {
+	ALOGD("jniEnvMod->FromReflectedMethod(env=%08x, jmethod=%08x)", (int)env, (int)jmethod);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jmethod);
+    ext->execManager->jniCall.function = 64;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = &jmethod;
+    ext->execManager->reqJniCall();
+	return *((jmethodID*)(ext->execManager->jniCall.param_data));
+}
+
 //code 58
 static jfieldID FromReflectedField(JNIEnvMod* env, jobject jfield) {
 	ALOGD("jniEnvMod->FromReflectedField(env=%08x, jfield=%08x)", (int)env, (int)jfield);
@@ -56,6 +68,41 @@ static jfieldID FromReflectedField(JNIEnvMod* env, jobject jfield) {
     ext->execManager->jniCall.param_data = &jfield;
     ext->execManager->reqJniCall();
 	return *((jfieldID*)(ext->execManager->jniCall.param_data));
+}
+
+//code 61
+static jobject ToReflectedMethod(JNIEnvMod* env, jclass jcls, jmethodID methodID, jboolean isStatic) {
+	ALOGD("jniEnvMod->ToReflectedMethod(env=%08x, jclass=%08x, methodID=%08x)",
+		(int)env, (int)jcls, (int)methodID);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jcls) + sizeof(methodID);
+	void* data = malloc(size);
+	memcpy(data, &jcls, sizeof(jcls));
+	memcpy(data+sizeof(jcls), &methodID, sizeof(methodID));
+    ext->execManager->jniCall.function = 61;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	jobject result = *((jobject*)(ext->execManager->jniCall.param_data));
+	free(data);
+	return result;
+}
+
+static jobject ToReflectedField(JNIEnvMod* env, jclass jcls, jfieldID fieldID, jboolean isStatic) {
+	ALOGD("jniEnvMod->ToReflectedField(env=%08x, jclass=%08x, fieldID=%08x)",
+		(int)env, (int)jcls, (int)fieldID);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jcls) + sizeof(fieldID);
+	void* data = malloc(size);
+	memcpy(data, &jcls, sizeof(jcls));
+	memcpy(data+sizeof(jcls), &fieldID, sizeof(fieldID));
+    ext->execManager->jniCall.function = 61;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	jobject result = *((jobject*)(ext->execManager->jniCall.param_data));
+	free(data);
+	return result;
 }
 
 //code 5
@@ -369,7 +416,7 @@ static jobject NewObject(JNIEnvMod* env, jclass jclazz, jmethodID methodID, ...)
 
 //code 59
 static jobject NewObjectV(JNIEnvMod* env, jclass jclazz, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->NewObject(env=%08x, jclazz=%08x, method=%08x)", (int)env, (int)jclazz, (int)methodID);
+	ALOGD("jniEnvMod->NewObject(env=%08x, jclazz=%08x, method=%08x, va_list)", (int)env, (int)jclazz, (int)methodID);
 	NEW_COPY();
 	PARAMS_FROM_ARGS();
     ext->execManager->jniCall.function = 59;
@@ -383,7 +430,8 @@ static jobject NewObjectV(JNIEnvMod* env, jclass jclazz, jmethodID methodID, va_
 
 //code 59
 static jobject NewObjectA(JNIEnvMod* env, jclass jclazz, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->NewObject(env=%08x, jclazz=%08x, method=%08x)", (int)env, (int)jclazz, (int)methodID);
+	ALOGD("jniEnvMod->NewObjectA(env=%08x, jclazz=%08x, method=%08x, args=%08x)",
+		(int)env, (int)jclazz, (int)methodID, (int)args);
 	NEW_COPY();
 	memcpy(d2, args, paramSize);
     ext->execManager->jniCall.function = 59;
@@ -613,6 +661,62 @@ static jint CallIntMethodA(JNIEnvMod* env, jobject jobj, jmethodID methodID, jva
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
 	jint result = (jint)*(int*)(ext->execManager->jniCall.param_data);
+	free(data);
+	return result;
+}
+
+//code 62
+static jfloat CallFloatMethod(JNIEnvMod* env, jobject jobj, jmethodID methodID, ...) {
+	ALOGD("jniEnvMod->CallFloatMethod(env=%08x, jobject=%08x, methodID=%08x, and some var args",
+		(int)env, (int)jobj, (int)methodID);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	va_list args;
+	va_start(args, methodID);
+	int firstParam = va_arg(args, int);
+	int paramSize = ext->execManager->getMethodParamSize(methodID);
+	int size = sizeof(jobject) + sizeof(jmethodID) + paramSize;
+	void* data = malloc(size);
+	memcpy(data, &jobj, sizeof(jobj));
+	void* d2 = data + sizeof(jobj);
+	memcpy(d2, &methodID, sizeof(methodID));
+	d2 += sizeof(methodID);
+	memcpy(d2, &firstParam, paramSize);
+	va_end(args);
+    ext->execManager->jniCall.function = 62;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	jfloat result = *((jfloat*)(ext->execManager->jniCall.param_data));
+	free(data);
+	return result;
+}
+
+//code 62
+static jfloat CallFloatMethodV(JNIEnvMod* env, jobject jobj, jmethodID methodID, va_list args) {
+	ALOGD("jniEnvMod->CallFloatMethodV(env=%08x, jobject=%08x, methodID=%08x, va_list=%08x)",
+		(int)env, (int)jobj, (int)methodID, args);
+	CALL_COPY();
+	PARAMS_FROM_ARGS();
+    ext->execManager->jniCall.function = 62;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	jfloat result = (jfloat)*(int*)(ext->execManager->jniCall.param_data);
+	free(data);
+	return result;
+}
+
+//code 62
+static jfloat CallFloatMethodA(JNIEnvMod* env, jobject jobj, jmethodID methodID, jvalue* args) {
+	ALOGD("jniEnvMod->CallFloatMethodA(env=%08x, jobject=%08x, methodID=%08x, jvalue*=%08x",
+		(int)env, (int)jobj, (int)methodID, (int)args);
+	CALL_COPY();
+	memcpy(d2, args, paramSize);
+    ext->execManager->jniCall.function = 62;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	jfloat result = (jfloat)*(int*)(ext->execManager->jniCall.param_data);
 	free(data);
 	return result;
 }
@@ -1109,6 +1213,22 @@ static jmethodID GetStaticMethodID(JNIEnvMod* env, jclass jclazz, const char* na
 	return result;
 }
 
+//code 60
+static void SetStaticLongField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jlong val) {
+	ALOGD("jniEnvMod->SetIntField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jlong);
+	void* data = malloc(size);
+	memcpy(data, &jc, sizeof(jc));
+	memcpy(data+sizeof(jc), &fieldID, sizeof(fieldID));
+	memcpy(data+sizeof(jc)+sizeof(fieldID), &val, sizeof(val));
+    ext->execManager->jniCall.function = 60;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->jniCall.taintsize = 0;
+    ext->execManager->reqJniCall();
+}
+
 //code 55
 static const jchar* GetStringChars(JNIEnvMod* env, jstring jstr, jboolean* isCopy) {
 	ALOGD("jniEnvMod->GetStringChars(env=%08x, jstr=%08x, isCopy=%08x)",
@@ -1152,8 +1272,8 @@ void ReleaseStringChars(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 		ALOGE("Negative string length: %d", s->length);
 		return;
 	}
-	ALOGD("found string map entry at %08x", s);
-	ALOGD("with length=%d, dalvikP=%08x, chars=%s", s->length, s->dalvikP, s->wrapperP);
+	ALOGD("found string map entry at %08x", (int)s);
+	ALOGD("with length=%d, dalvikP=%08x, chars=%s", s->length, (int)(s->dalvikP), s->wrapperP);
 	int size = sizeof(jstr) + sizeof(s->dalvikP) + sizeof(s->length) + sizeof(jchar)*s->length;
 	void* data = malloc(size);
 	ALOGD("allocated memory of size %d to %08x", size, (int*)data);
@@ -1189,8 +1309,30 @@ static const char* GetStringUTFChars(JNIEnvMod* env, jstring jstr, jboolean* isC
 	free(data);
 	
 	//ext->execManager->reqJniCall(42);
-	const char* d = (char*)ext->execManager->jniCall.param_data;
+	int dalvikP = *(int*)(ext->execManager->jniCall.param_data);
+	const char* d = (char*)(ext->execManager->jniCall.param_data+sizeof(char*));
+	ext->execManager->addStringChars(dalvikP, 0, (const jchar*)d);
 	return d;
+}
+
+//code 67
+static void ReleaseStringUTFChars(JNIEnvMod* env, jstring jstr, const char* utf) {
+	ALOGD("jniEnvMod->ReleaseStringUTFChars(env=%08x, jstr=%08x, utf=%s)",
+		(int)env, (int)jstr, utf);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	stringMap_t* s = ext->execManager->getDalvikChars((const jchar*)utf);
+	int length = strlen(utf);
+	int size = sizeof(char*) + sizeof(int) + length*8;
+	void* data = malloc(size);
+	memcpy(data, &s->dalvikP, sizeof(char*));
+	memcpy(data+sizeof(char*), &length, sizeof(int));
+	memcpy(data+sizeof(char*)+sizeof(int), &jstr, sizeof(jstring));
+	memcpy(data+sizeof(char*)+2*sizeof(int), utf, length*8);
+	ext->execManager->jniCall.function = 67;
+	ext->execManager->jniCall.param_data = data;
+	ext->execManager->jniCall.length = size;
+	ext->execManager->reqJniCall();
+	free(data);
 }
 
 //code 2
@@ -1237,6 +1379,7 @@ static void GetByteArrayRegion(JNIEnvMod* env, jbyteArray jarr, jsize start, jsi
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
 	memcpy(buf, ext->execManager->jniCall.param_data, sizeof(jbyte)*len);
+	free(data);
 }
 
 //code 53
@@ -1258,8 +1401,72 @@ static void SetShortArrayRegion(JNIEnvMod* env, jshortArray jarr, jsize start, j
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
+	free(data);
 }
 
+//code ?
+static void GetStringUTFRegion(JNIEnvMod* env, jstring jstr, jsize start, jsize len, char* buf) {
+	ALOGD("GetStringUTFRegion");
+}
+
+/*static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jshortArray jarr, jboolean* isCopy) {
+	ALOGD("GetShortArrayCritical");
+	void* result = malloc(8);
+	return result;
+}
+
+static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jbyteArray jarr, jboolean* isCopy) {
+	ALOGD("GetByteArrayCritical");
+	void* result = malloc(8);
+	return result;
+}*/
+
+//code 65
+static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, jboolean* isCopy) {
+	ALOGD("jniEnvMod->GetPrimitiveArrayCritical(env=%08x, jarr=%08x, isCopy)", (int)env, (int)jarr);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jarr);
+    ext->execManager->jniCall.function = 65;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+	size = *((int*)(ext->execManager->jniCall.param_data));
+	int dalvikP = *((int*)(ext->execManager->jniCall.param_data+sizeof(int)));
+	ALOGD("GetPrimitiveArrayCritical received size=%d, dalvikP=%08x", size, dalvikP);
+	ext->execManager->addArray(jarr, size, dalvikP);
+	//TODO: too fragile? void* might be freed by BnWrapper?
+	//void* result = (void*)(ext->execManager->jniCall.param_data+sizeof(int)+sizeof(dalvikP));
+	void* result = malloc(size);
+	memcpy(result, ext->execManager->jniCall.param_data+sizeof(int)+sizeof(dalvikP), size);
+	return result;
+}
+
+//code 66
+static void ReleasePrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, void* array, jint mode) {
+	ALOGD("jniEnvMod->ReleasePrimitiveArrayCritical(env=%08x, jarr=%08x, array=%08x, mode=%08x)", (int)env, (int)jarr, (int)array, mode);
+	if (mode == 1) return; 
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	arrayList_t* at = ext->execManager->getArrayLength(jarr);
+	ALOGD("address of length: %08x", &(at->length));
+	ALOGD("address of dalvikP: %08x", &(at->dalvikP));
+	ALOGD("dalvikP=%08x", at->dalvikP);
+	int size = sizeof(jarr) + sizeof(int) + at->length;
+	if (size<0) {
+		ALOGE("Array lost (negative size)"); return;
+	}
+	jshort* iarr = (jshort*)array;
+	ALOGD("i[0]=%d, i[1]=%d, i[2]=%d, i[3]=%d, i[4]=%d, i[5]=%d, i[6]=%d",
+		iarr[0], iarr[1], iarr[2], iarr[3], iarr[4], iarr[5], iarr[6]);
+	void* data = malloc(size);
+	memcpy(data, &jarr, sizeof(jarr));
+	memcpy(data+sizeof(jarr), &(at->length), 2*sizeof(int));
+	memcpy(data+sizeof(jarr)+2*sizeof(int), array, at->length);
+    ext->execManager->jniCall.function = 66;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	//free(array); crashes! TODO: but would we need to free this?
+}
 
 //code 57
 void ReleaseStringCritical(JNIEnvMod* env, jstring jstr, const jchar* chars) {
@@ -1301,12 +1508,12 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     GetVersion,
     NULL, //DefineClass,
     FindClass,
-    NULL, //FromReflectedMethod,
+    FromReflectedMethod,
     FromReflectedField,
-    NULL, //ToReflectedMethod,
+    ToReflectedMethod,
     GetSuperclass,
     IsAssignableFrom,
-    NULL, //ToReflectedField,
+    ToReflectedField,
     Throw,
     ThrowNew,
     ExceptionOccurred,
@@ -1349,9 +1556,9 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //CallLongMethod,
     NULL, //CallLongMethodV,
     NULL, //CallLongMethodA,
-    NULL, //CallFloatMethod,
-    NULL, //CallFloatMethodV,
-    NULL, //CallFloatMethodA,
+    CallFloatMethod,
+    CallFloatMethodV,
+    CallFloatMethodA,
     NULL, //CallDoubleMethod,
     NULL, //CallDoubleMethodV,
     NULL, //CallDoubleMethodA,
@@ -1454,7 +1661,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //SetStaticCharField,
     NULL, //SetStaticShortField,
     NULL, //SetStaticIntField,
-    NULL, //SetStaticLongField,
+    SetStaticLongField,
     NULL, //SetStaticFloatField,
     NULL, //SetStaticDoubleField,
     NULL, //NewString,
@@ -1464,7 +1671,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NewStringUTF, //2: NewStringUTF,
     NULL, //GetStringUTFLength,
     GetStringUTFChars, //1:GetStringUTFChars,
-    NULL, //ReleaseStringUTFChars,
+    ReleaseStringUTFChars,
     NULL, //GetArrayLength,
     NULL, //NewObjectArray,
     NULL, //GetObjectArrayElement,
@@ -1515,9 +1722,9 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //MonitorExit,
     NULL, //GetJavaVM,
     NULL, //GetStringRegion,
-    NULL, //GetStringUTFRegion,
-    NULL, //GetPrimitiveArrayCritical,
-    NULL, //ReleasePrimitiveArrayCritical,
+    GetStringUTFRegion,
+    GetPrimitiveArrayCritical,
+    ReleasePrimitiveArrayCritical,
     NULL, //GetStringCritical,
     ReleaseStringCritical,
     NULL, //NewWeakGlobalRef,

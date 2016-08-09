@@ -37,6 +37,13 @@ namespace android {
 		sigList_t* next;
 	};
     
+	struct arrayList_t {
+		jarray jarr;
+		int length;
+		int dalvikP;
+		arrayList_t* next;
+	};
+    
 	struct stringMap_t {
 		int dalvikP;
 		int length;
@@ -77,6 +84,7 @@ namespace android {
 		jniCall_t jniCall;
 
 		sigList_t* sigList;
+		arrayList_t* arrayList;
 		stringMap_t* charsList;
 
         ExecutionManager() {
@@ -86,6 +94,7 @@ namespace android {
 
             id = 0;
 			sigList = 0;
+			arrayList = 0;
 			charsList = 0;
 
             sem_init(&mReplyReady, 1, 0);
@@ -115,6 +124,8 @@ namespace android {
 		const char* getSignatureForMethod(jmethodID methodID);
 		int getNumParams(jmethodID methodID);
 		int getMethodParamSize(jmethodID methodID);
+		void addArray(jarray jarr, int length, int dalvikP);
+		arrayList_t* getArrayLength(jarray jarr);
 		void addStringChars(int dalvik, int length, const jchar* wrapperP);
 		stringMap_t* getDalvikChars(const jchar* wrapperP);
 		void deleteCharsEntry(const jchar* wrapperP);

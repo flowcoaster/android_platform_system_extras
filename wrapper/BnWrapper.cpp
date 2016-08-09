@@ -191,12 +191,15 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	      //for (int i=0; i<argc; i++) ALOGD("wrote padding #%d, status=%d", i, reply->writeInt32((int)0));
 	      //ALOGD("wrote result and taint placeholders to reply parcel");
 	    } else if (status == ExecutionManager::WAIT4JNI) {
-	      ALOGD("Execution interrupted for JNI; handling JNI call now");
+	    	ALOGD("Execution interrupted for JNI; handling JNI call now");
 			ALOGD("function=%d, length=%d, param_data=%08x", myExecManager->jniCall.function,
 				myExecManager->jniCall.length, (int)*(int*)(myExecManager->jniCall.param_data));
-	      reply->writeInt32(myExecManager->jniCall.function);
-	      reply->writeInt32(myExecManager->jniCall.length);
-	      reply->write(myExecManager->jniCall.param_data, myExecManager->jniCall.length);
+	    	reply->writeInt32(myExecManager->jniCall.function);
+	    	reply->writeInt32(myExecManager->jniCall.length);
+	    	reply->writeInt32(myExecManager->jniCall.taintsize);
+	    	reply->write(myExecManager->jniCall.taint_data, myExecManager->jniCall.taintsize);
+	    	reply->write(myExecManager->jniCall.param_data, myExecManager->jniCall.length);
+			for (int i=0; i<myExecManager->jniCall.length; i++) reply->writeInt32(0); //placeholder for taint values
 	    } else {
 	      ALOGD("Unexpected status code from Execution Manager: %d", status);
 	      free((void*)argv);
@@ -207,36 +210,40 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	}
 	case CALLBACK: {
 	    //ALOGD("callback on JNI request");
-	    int function, datasize;
+	    int function, datasize, taintsize;
 	    data.readInt32(&function);
 	    data.readInt32(&datasize);
-	    ALOGD("callback on JNI request: read function=%d, datasize=%d", function, datasize);
+	    data.readInt32(&taintsize);
+	    ALOGD("callback on JNI request: read function=%d, datasize=%d, taintsize=%d", function, datasize, taintsize);
 	    void* rawdata = malloc(datasize); //freed at the end off CALLBACK
 	    data.read(rawdata, datasize);
 	    ExecutionManager* myExecManager = ((JNIEnvModExt*)jniEnv)->execManager;
 	    if (function == myExecManager->jniCall.function) {
-		myExecManager->jniCall.length = datasize;
-		myExecManager->jniCall.param_data = rawdata;
+			myExecManager->jniCall.length = datasize;
+			myExecManager->jniCall.param_data = rawdata;
 	    } else {
-		ALOGE("Function mismatch! Different JNI calls interfering.");
-		free(rawdata);
-		return -1;
+			ALOGE("Function mismatch! Different JNI calls interfering.");
+			free(rawdata);
+			return -1;
 	    }
 	    myExecManager->jniCall.length = datasize;
 	    int status = myExecManager->setJniResult(rawdata);
 	    ALOGD("Status of ExecutionManager after setJniResult is %s", ExecutionManager::strStatus(status));
 	    reply->writeInt32(status);
 	    if (status == ExecutionManager::WAIT4JNI) {
-		ALOGD("more JNI needed, writing out function and parameters");
-		reply->writeInt32(myExecManager->jniCall.function);
-		reply->writeInt32(myExecManager->jniCall.length);
-		reply->write(myExecManager->jniCall.param_data, myExecManager->jniCall.length);
+			ALOGD("more JNI needed, writing out function and parameters");
+	    	reply->writeInt32(myExecManager->jniCall.function);
+	    	reply->writeInt32(myExecManager->jniCall.length);
+	    	reply->writeInt32(myExecManager->jniCall.taintsize);
+	    	reply->write(myExecManager->jniCall.taint_data, myExecManager->jniCall.taintsize);
+	    	reply->write(myExecManager->jniCall.param_data, myExecManager->jniCall.length);
 	    } else if (status == ExecutionManager::FINISHED) {
 	      ALOGD("dvmPlatformInvoke finished. result=%lld", myExecManager->platformInvoke.pResult->j);
 	      ALOGD("wrote result, status=%d (argc=%d)",
 		reply->writeInt64(myExecManager->platformInvoke.pResult->j), myExecManager->platformInvoke.argc); 
 	      for (int i=0; i<myExecManager->platformInvoke.argc; i++) reply->writeInt32((int)0); // padding for taint values		
 	    }
+		ALOGD("now freeing return data pointer");
 	    free(rawdata);
 	    return NO_ERROR;
 	} break;

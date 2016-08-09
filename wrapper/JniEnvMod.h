@@ -444,6 +444,8 @@ struct JNINativeInterfaceMod {
     jobjectRefType (*GetObjectRefType)(JNIEnvMod*, jobject);
 
 //#ifdef WITH_TAINT_TRACKING
+	const char*	(*GetArrayType)(JNIEnvMod*, jarray);
+
     jobject     (*GetObjectTaintedField)(JNIEnvMod*, jobject, jfieldID, u4*);
     jboolean    (*GetBooleanTaintedField)(JNIEnvMod*, jobject, jfieldID, u4*);
     jbyte       (*GetByteTaintedField)(JNIEnvMod*, jobject, jfieldID, u4*);
@@ -464,8 +466,8 @@ struct JNINativeInterfaceMod {
     void        (*SetFloatTaintedField)(JNIEnvMod*, jobject, jfieldID, jfloat, u4);
     void        (*SetDoubleTaintedField)(JNIEnvMod*, jobject, jfieldID, jdouble, u4);
 
-    jstring     (*NewTaintedStringUTF)(JNIEnvMod*, const char*, u4 taint);
-    const char* (*GetTaintedStringUTFChars)(JNIEnvMod*, jstring, u4* taint, jboolean*);
+  /*  jstring     (*NewTaintedStringUTF)(JNIEnvMod*, const char*, u4 taint);
+      const char* (*GetTaintedStringUTFChars)(JNIEnvMod*, jstring, u4* taint, jboolean*);*/
 
     jobject     (*CallObjectTaintedMethodA)(JNIEnvMod*, jobject, u4, jmethodID, u4*, jvalue*, u4*);
     jboolean    (*CallBooleanTaintedMethodA)(JNIEnvMod*, jobject, u4, jmethodID, u4*, jvalue*, u4*);
@@ -1027,6 +1029,9 @@ struct _JNIEnvMod {
     jobjectRefType GetObjectRefType(jobject obj)
     { return functions->GetObjectRefType(this, obj); }
 //#ifdef WITH_TAINT_TRACKING
+	const char*	GetArrayType(jarray jarr)
+	{ return functions->GetArrayType(this, jarr); }
+
 	jobject GetObjectTaintedField(jobject obj, jfieldID field, u4* taint)
 	{ return functions->GetObjectTaintedField(this, obj, field, taint); }
 	jboolean GetBooleanTaintedField(jobject obj, jfieldID field, u4* taint)
@@ -1065,10 +1070,10 @@ struct _JNIEnvMod {
 	void SetDoubleTaintedField(jobject obj, jfieldID field, jdouble val, u4 taint)
 	{ return functions->SetDoubleTaintedField(this, obj, field, val, taint); }
 
-        jstring NewTaintedStringUTF(const char* bytes, u4 taint)
+  /*        jstring NewTaintedStringUTF(const char* bytes, u4 taint)
         { return functions->NewTaintedStringUTF(this, bytes, taint); }
         const char* GetTaintedStringUTFChars(jstring string, u4* taint, jboolean* isCopy)
-        { return functions->GetTaintedStringUTFChars(this, string, taint, isCopy); }
+        { return functions->GetTaintedStringUTFChars(this, string, taint, isCopy); }*/
 
         jobject CallObjectTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
         { return functions->CallObjectTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
@@ -1095,6 +1100,7 @@ struct _JNIEnvMod {
     void        (*SetFloatTaintedField)(JNIEnv*, jobject, jfieldID, jfloat, u4);
     void        (*SetDoubleTaintedField)(JNIEnv*, jobject, jfieldID, jdouble, u4);
     void        (*CallVoidTaintedMethodA)(JNIEnv*, jobject, u4 objTaint, jmethodID, jvalue*, u4*);*/
+
 //#endif // WITH_TAINT_TRACKING
 
 #endif /*__cplusplus*/
