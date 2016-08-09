@@ -56,6 +56,7 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callCallIntMethod();
 	void callCallIntMethodV();
 	void callCallIntMethodA();
+	void callCallFloatMethodA();
 	void callCallObjectMethod();
 	void callCallVoidMethod();
 	void callCallNonvirtualObjectMethodA();
@@ -69,6 +70,13 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callReleaseStringCritical();
 	void callFromReflectedField();
 	void callNewObjectA();
+	void callSetStaticLongField();
+	void callToReflectedMethod();
+	void callToReflectedField();
+	void callFromReflectedMethod();
+	void callGetPrimitiveArrayCritical();
+	void callReleasePrimitiveArrayCritical();
+	void callReleaseStringUTFChars();
 	int handleJNIRequest(JValTaint* res, Parcel* reply);
 	void* replydata;
 	void* replytaint;
