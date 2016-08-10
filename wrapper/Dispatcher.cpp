@@ -150,10 +150,5 @@ extern "C" int32_t addFunc(const char* funcName, int32_t libRef) {
     } else return 0;
 }
 
-extern "C" void callback() {
-	ALOGD("-> callback()");
-	if (wrapper != 0) wrapper->callback();
-}
-
 } //namespace android
 
