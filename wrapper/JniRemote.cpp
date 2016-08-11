@@ -1281,12 +1281,14 @@ void ReleaseStringChars(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 	memcpy(data+sizeof(jstr), &(s->dalvikP), sizeof(s->dalvikP));
 	memcpy(data+sizeof(jstr)+sizeof(s->dalvikP), &(s->length), sizeof(s->length));
 	memcpy(data+sizeof(jstr)+sizeof(s->dalvikP)+sizeof(s->length), chars, sizeof(jchar)*s->length);
-	ext->execManager->deleteCharsEntry(chars);
+	ALOGD("copied all data");
     ext->execManager->jniCall.function = 56;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
-	const jchar* result = (jchar*)ext->execManager->jniCall.param_data;
+	ALOGD("ReleaseStringChars: Now deleting entry in table (chars=%08x)", (int)chars);
+	ALOGD("execManager=%08x", (int)(ext->execManager));
+	ext->execManager->deleteCharsEntry(chars);
 }
 
 //code 1

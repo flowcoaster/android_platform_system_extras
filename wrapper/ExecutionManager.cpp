@@ -271,19 +271,30 @@ namespace android {
 		if (s->wrapperP == wrapperP) {
 			ALOGD("found entry with dalvikP=%08x, length=%d, wrapperP=%s, next=%08x",
 				(int)s->dalvikP, s->length, s->wrapperP, (int)s->next);
-			ALOGD("returning reference %08x", s);
+			ALOGD("returning reference %08x", (int)s);
 			return s;
 		} else return NULL;
 	}
 
 	void ExecutionManager::deleteCharsEntry(const jchar* wrapperP) {
+		ALOGD("deleteCharsEntry(wrapperP=%08x)", (int)wrapperP);
 		if (charsList == 0) return;
+		ALOGD("charsList contains at least one element");
 		if (charsList->next == 0) {
 			charsList = 0;
 			return;
 		}
+		ALOGD("charsList contains more than one element");
 		stringMap_t* s = charsList;
-		while (s->next->wrapperP != wrapperP && s->next != 0) s = s->next;
+		if (s->wrapperP == wrapperP) {
+			ALOGD("entry is at head of list");
+			charsList = s->next;
+			return;
+		}
+		while (s->next != 0 && s->next->wrapperP != wrapperP) {
+			ALOGD("jumping to next=%08x", (int)s->next);
+			s = s->next;
+		}
 		if (s->next->wrapperP == wrapperP) {
 			stringMap_t* temp = s->next->next;
 			free(s->next);
