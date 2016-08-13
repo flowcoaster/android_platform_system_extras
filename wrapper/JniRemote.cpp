@@ -351,7 +351,7 @@ static jobject AllocObject(JNIEnvMod* env, jclass jclazz) {
 	d2 += sizeof(methodID); \
 	const char* sig = ext->execManager->getSignatureForMethod(methodID);
 
-#define PARAMS_FROM_ARGS() \	
+#define PARAMS_FROM_ARGS() \
 	int i = 0; \
 	jvalue v; \
 	while (sig[i] != ')') { \
@@ -1735,7 +1735,90 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //NewDirectByteBuffer,
     NULL, //GetDirectBufferAddress,
     NULL, //GetDirectBufferCapacity,
-    NULL //GetObjectRefType
+    NULL, //GetObjectRefType
+
+    // following fields are initializers for
+    // the tainted JNI method calls
+    // as they should not be usable by native code
+    // outside the dalvik process, we initialize
+    // them with NULL
+    NULL, // GetArrayType
+
+    NULL, // NewTaintedStringUTF,
+	NULL, // GetTaintedStringUTFChars,
+
+	NULL, // GetObjectTaintedField,
+	NULL, // GetBooleanTaintedField,
+	NULL, // GetByteTaintedField,
+	NULL, // GetCharTaintedField,
+	NULL, // GetShortTaintedField,
+	NULL, // GetIntTaintedField,
+	NULL, // GetLongTaintedField,
+	NULL, // GetFloatTaintedField,
+	NULL, // GetDoubleTaintedField,
+
+	NULL, // SetObjectTaintedField,
+	NULL, // SetBooleanTaintedField,
+	NULL, // SetByteTaintedField,
+	NULL, // SetCharTaintedField,
+	NULL, // SetShortTaintedField,
+	NULL, // SetIntTaintedField,
+	NULL, // SetLongTaintedField,
+	NULL, // SetFloatTaintedField,
+	NULL, // SetDoubleTaintedField,
+
+	NULL, // CallObjectTaintedMethodA,
+	NULL, // CallBooleanTaintedMethodA,
+	NULL, // CallByteTaintedMethodA,
+	NULL, // CallCharTaintedMethodA,
+	NULL, // CallShortTaintedMethodA,
+	NULL, // CallIntTaintedMethodA,
+	NULL, // CallLongTaintedMethodA,
+	NULL, // CallFloatTaintedMethodA,
+	NULL, // CallDoubleTaintedMethodA,
+	NULL, // CallVoidTaintedMethodA,
+
+	NULL, // CallNonvirtualObjectTaintedMethodA,
+	NULL, // CallNonvirtualBooleanTaintedMethodA,
+	NULL, // CallNonvirtualByteTaintedMethodA,
+	NULL, // CallNonvirtualCharTaintedMethodA,
+	NULL, // CallNonvirtualShortTaintedMethodA,
+	NULL, // CallNonvirtualIntTaintedMethodA,
+	NULL, // CallNonvirtualLongTaintedMethodA,
+	NULL, // CallNonvirtualFloatTaintedMethodA,
+	NULL, // CallNonvirtualDoubleTaintedMethodA,
+	NULL, // CallNonvirtualVoidTaintedMethodA,
+
+	NULL, // CallStaticObjectTaintedMethodA,
+	NULL, // CallStaticBooleanTaintedMethodA,
+	NULL, // CallStaticByteTaintedMethodA,
+	NULL, // CallStaticCharTaintedMethodA,
+	NULL, // CallStaticShortTaintedMethodA,
+	NULL, // CallStaticIntTaintedMethodA,
+	NULL, // CallStaticLongTaintedMethodA,
+	NULL, // CallStaticFloatTaintedMethodA,
+	NULL, // CallStaticDoubleTaintedMethodA,
+	NULL, // CallStaticVoidTaintedMethodA,
+
+	NULL, // GetStaticObjectTaintedField,
+	NULL, // GetStaticBooleanTaintedField,
+	NULL, // GetStaticByteTaintedField,
+	NULL, // GetStaticCharTaintedField,
+	NULL, // GetStaticShortTaintedField,
+	NULL, // GetStaticIntTaintedField,
+	NULL, // GetStaticLongTaintedField,
+	NULL, // GetStaticFloatTaintedField,
+	NULL, // GetStaticDoubleTaintedField,
+
+	NULL, // SetStaticObjectTaintedField,
+	NULL, // SetStaticBooleanTaintedField,
+	NULL, // SetStaticByteTaintedField,
+	NULL, // SetStaticCharTaintedField,
+	NULL, // SetStaticShortTaintedField,
+	NULL, // SetStaticIntTaintedField,
+	NULL, // SetStaticLongTaintedField,
+	NULL, // SetStaticFloatTaintedField,
+	NULL  // SetStaticDoubleTaintedField
 };
 
 JNIEnvMod* dvmCreateJNIEnvMod() {

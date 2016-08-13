@@ -446,6 +446,9 @@ struct JNINativeInterfaceMod {
 //#ifdef WITH_TAINT_TRACKING
 	const char*	(*GetArrayType)(JNIEnvMod*, jarray);
 
+    jstring     (*NewTaintedStringUTF)(JNIEnvMod*, const char*, u4);
+    const char* (*GetTaintedStringUTFChars)(JNIEnvMod*, jstring, jboolean*, u4*);
+
     jobject     (*GetObjectTaintedField)(JNIEnvMod*, jobject, jfieldID, u4*);
     jboolean    (*GetBooleanTaintedField)(JNIEnvMod*, jobject, jfieldID, u4*);
     jbyte       (*GetByteTaintedField)(JNIEnvMod*, jobject, jfieldID, u4*);
@@ -466,9 +469,6 @@ struct JNINativeInterfaceMod {
     void        (*SetFloatTaintedField)(JNIEnvMod*, jobject, jfieldID, jfloat, u4);
     void        (*SetDoubleTaintedField)(JNIEnvMod*, jobject, jfieldID, jdouble, u4);
 
-  /*  jstring     (*NewTaintedStringUTF)(JNIEnvMod*, const char*, u4 taint);
-      const char* (*GetTaintedStringUTFChars)(JNIEnvMod*, jstring, u4* taint, jboolean*);*/
-
     jobject     (*CallObjectTaintedMethodA)(JNIEnvMod*, jobject, u4, jmethodID, u4*, jvalue*, u4*);
     jboolean    (*CallBooleanTaintedMethodA)(JNIEnvMod*, jobject, u4, jmethodID, u4*, jvalue*, u4*);
     jbyte       (*CallByteTaintedMethodA)(JNIEnvMod*, jobject, u4, jmethodID, u4*, jvalue*, u4*);
@@ -479,6 +479,49 @@ struct JNINativeInterfaceMod {
     jfloat      (*CallFloatTaintedMethodA)(JNIEnvMod*, jobject, u4, jmethodID, u4*, jvalue*, u4*);
     jdouble     (*CallDoubleTaintedMethodA)(JNIEnvMod*, jobject, u4, jmethodID, u4*, jvalue*, u4*);
     void        (*CallVoidTaintedMethodA)(JNIEnvMod*, jobject, u4, jmethodID, u4*, jvalue*, u4*);
+
+    jobject     (*CallNonvirtualObjectTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+    jboolean    (*CallNonvirtualBooleanTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+    jbyte       (*CallNonvirtualByteTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+    jchar       (*CallNonvirtualCharTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+    jshort      (*CallNonvirtualShortTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+    jint        (*CallNonvirtualIntTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+    jlong       (*CallNonvirtualLongTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+    jfloat      (*CallNonvirtualFloatTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+    jdouble     (*CallNonvirtualDoubleTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+    void        (*CallNonvirtualVoidTaintedMethodA)(JNIEnvMod*, jobject, u4, jclass, jmethodID, u4*, jvalue*, u4*);
+
+    jobject     (*CallStaticObjectTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+    jboolean    (*CallStaticBooleanTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+    jbyte       (*CallStaticByteTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+    jchar       (*CallStaticCharTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+    jshort      (*CallStaticShortTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+    jint        (*CallStaticIntTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+    jlong       (*CallStaticLongTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+    jfloat      (*CallStaticFloatTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+    jdouble     (*CallStaticDoubleTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+    void        (*CallStaticVoidTaintedMethodA)(JNIEnvMod*, jclass, jmethodID, u4*, jvalue*, u4*);
+
+    jobject     (*GetStaticObjectTaintedField)(JNIEnvMod*, jclass, jfieldID, u4*);
+    jboolean    (*GetStaticBooleanTaintedField)(JNIEnvMod*, jclass, jfieldID, u4*);
+    jbyte       (*GetStaticByteTaintedField)(JNIEnvMod*, jclass, jfieldID, u4*);
+    jchar       (*GetStaticCharTaintedField)(JNIEnvMod*, jclass, jfieldID, u4*);
+    jshort      (*GetStaticShortTaintedField)(JNIEnvMod*, jclass, jfieldID, u4*);
+    jint        (*GetStaticIntTaintedField)(JNIEnvMod*, jclass, jfieldID, u4*);
+    jlong       (*GetStaticLongTaintedField)(JNIEnvMod*, jclass, jfieldID, u4*);
+    jfloat      (*GetStaticFloatTaintedField)(JNIEnvMod*, jclass, jfieldID, u4*);
+    jdouble     (*GetStaticDoubleTaintedField)(JNIEnvMod*, jclass, jfieldID, u4*);
+
+    void        (*SetStaticObjectTaintedField)(JNIEnvMod*, jclass, jfieldID, jobject, u4);
+    void        (*SetStaticBooleanTaintedField)(JNIEnvMod*, jclass, jfieldID, jboolean, u4);
+    void        (*SetStaticByteTaintedField)(JNIEnvMod*, jclass, jfieldID, jbyte, u4);
+    void        (*SetStaticCharTaintedField)(JNIEnvMod*, jclass, jfieldID, jchar, u4);
+    void        (*SetStaticShortTaintedField)(JNIEnvMod*, jclass, jfieldID, jshort, u4);
+    void        (*SetStaticIntTaintedField)(JNIEnvMod*, jclass, jfieldID, jint, u4);
+    void        (*SetStaticLongTaintedField)(JNIEnvMod*, jclass, jfieldID, jlong, u4);
+    void        (*SetStaticFloatTaintedField)(JNIEnvMod*, jclass, jfieldID, jfloat, u4);
+    void        (*SetStaticDoubleTaintedField)(JNIEnvMod*, jclass, jfieldID, jdouble, u4);
+  
 //#endif
 };
 
@@ -609,7 +652,11 @@ struct _JNIEnvMod {
 #define CALL_TYPE_METHODA(_jtype, _jname)                                   \
     _jtype Call##_jname##MethodA(jobject obj, jmethodID methodID,           \
         jvalue* args)                                                       \
-    { return functions->Call##_jname##MethodA(this, obj, methodID, args); }
+    { return functions->Call##_jname##MethodA(this, obj, methodID, args); } \
+    _jtype Call##_jname##TaintedMethodA(jobject obj, u4 objTaint,           \
+             jmethodID methodID, u4* resultTaint, jvalue* args, u4* taints) \
+   { return functions->Call##_jname##TaintedMethodA(this, obj, objTaint,    \
+                                    methodID, resultTaint, args, taints); }
 
 #define CALL_TYPE(_jtype, _jname)                                           \
     CALL_TYPE_METHOD(_jtype, _jname)                                        \
@@ -637,6 +684,8 @@ struct _JNIEnvMod {
     { functions->CallVoidMethodV(this, obj, methodID, args); }
     void CallVoidMethodA(jobject obj, jmethodID methodID, jvalue* args)
     { functions->CallVoidMethodA(this, obj, methodID, args); }
+    void CallVoidTaintedMethodA(jobject obj, u4 objTaint, jmethodID methodID, u4* resultTaint, jvalue* args, u4* taints)
+    { functions->CallVoidTaintedMethodA(this, obj, objTaint, methodID, resultTaint, args, taints); }
 
 #define CALL_NONVIRT_TYPE_METHOD(_jtype, _jname)                            \
     _jtype CallNonvirtual##_jname##Method(jobject obj, jclass clazz,        \
@@ -659,7 +708,12 @@ struct _JNIEnvMod {
     _jtype CallNonvirtual##_jname##MethodA(jobject obj, jclass clazz,       \
         jmethodID methodID, jvalue* args)                                   \
     { return functions->CallNonvirtual##_jname##MethodA(this, obj, clazz,   \
-        methodID, args); }
+                                                        methodID, args); }  \
+    _jtype CallNonvirtual##_jname##TaintedMethodA(jobject obj, u4 objTaint, \
+         jclass jclazz, jmethodID methodID, u4* resultTaint, jvalue* args,  \
+         u4* taints)                                                        \
+  { return functions->CallNonvirtual##_jname##TaintedMethodA(this, obj,     \
+                 objTaint, jclazz, methodID, resultTaint, args, taints); }
 
 #define CALL_NONVIRT_TYPE(_jtype, _jname)                                   \
     CALL_NONVIRT_TYPE_METHOD(_jtype, _jname)                                \
@@ -676,8 +730,7 @@ struct _JNIEnvMod {
     CALL_NONVIRT_TYPE(jfloat, Float)
     CALL_NONVIRT_TYPE(jdouble, Double)
 
-    void CallNonvirtualVoidMethod(jobject obj, jclass clazz,
-        jmethodID methodID, ...)
+    void CallNonvirtualVoidMethod(jobject obj, jclass clazz, jmethodID methodID, ...)
     {
         va_list args;
         va_start(args, methodID);
@@ -690,7 +743,12 @@ struct _JNIEnvMod {
     void CallNonvirtualVoidMethodA(jobject obj, jclass clazz,
         jmethodID methodID, jvalue* args)
     { functions->CallNonvirtualVoidMethodA(this, obj, clazz, methodID, args); }
-
+    void CallNonvirtualVoidTaintedMethodA(jobject obj, u4 objTaint,
+         jclass jclazz, jmethodID methodID, u4* resultTaint, jvalue* args,
+         u4* taints)
+    { functions->CallNonvirtualVoidTaintedMethodA(this, obj,
+                      objTaint, jclazz, methodID, resultTaint, args, taints); }
+  
     jfieldID GetFieldID(jclass clazz, const char* name, const char* sig)
     { return functions->GetFieldID(this, clazz, name, sig); }
 
@@ -756,7 +814,11 @@ struct _JNIEnvMod {
     _jtype CallStatic##_jname##MethodA(jclass clazz, jmethodID methodID,    \
         jvalue* args)                                                       \
     { return functions->CallStatic##_jname##MethodA(this, clazz, methodID,  \
-        args); }
+        args); }                                                            \
+    _jtype CallStatic##_jname##TaintedMethodA(jclass clazz, jmethodID methodID, \
+                             u4* resultTaint, jvalue* args, u4* taints)     \
+    { return functions->CallStatic##_jname##TaintedMethodA(this, clazz,     \
+                         methodID, resultTaint, args, taints); }
 
 #define CALL_STATIC_TYPE(_jtype, _jname)                                    \
     CALL_STATIC_TYPE_METHOD(_jtype, _jname)                                 \
@@ -784,6 +846,8 @@ struct _JNIEnvMod {
     { functions->CallStaticVoidMethodV(this, clazz, methodID, args); }
     void CallStaticVoidMethodA(jclass clazz, jmethodID methodID, jvalue* args)
     { functions->CallStaticVoidMethodA(this, clazz, methodID, args); }
+    void CallStaticVoidTaintedMethodA(jclass clazz, jmethodID methodID, u4* resultTaint, jvalue* args, u4* taints)
+    { functions->CallStaticVoidTaintedMethodA(this, clazz, methodID, NULL, args, taints); }
 
     jfieldID GetStaticFieldID(jclass clazz, const char* name, const char* sig)
     { return functions->GetStaticFieldID(this, clazz, name, sig); }
@@ -1032,6 +1096,11 @@ struct _JNIEnvMod {
 	const char*	GetArrayType(jarray jarr)
 	{ return functions->GetArrayType(this, jarr); }
 
+    jstring NewTaintedStringUTF(const char* bytes, u4 taint)
+    { return functions->NewTaintedStringUTF(this, bytes, taint); }
+    const char* GetTaintedStringUTFChars(jstring string, jboolean* isCopy, u4* taint)
+    { return functions->GetTaintedStringUTFChars(this, string, isCopy, taint); }
+
 	jobject GetObjectTaintedField(jobject obj, jfieldID field, u4* taint)
 	{ return functions->GetObjectTaintedField(this, obj, field, taint); }
 	jboolean GetBooleanTaintedField(jobject obj, jfieldID field, u4* taint)
@@ -1069,38 +1138,7 @@ struct _JNIEnvMod {
 	{ return functions->SetFloatTaintedField(this, obj, field, val, taint); }
 	void SetDoubleTaintedField(jobject obj, jfieldID field, jdouble val, u4 taint)
 	{ return functions->SetDoubleTaintedField(this, obj, field, val, taint); }
-
-  /*        jstring NewTaintedStringUTF(const char* bytes, u4 taint)
-        { return functions->NewTaintedStringUTF(this, bytes, taint); }
-        const char* GetTaintedStringUTFChars(jstring string, u4* taint, jboolean* isCopy)
-        { return functions->GetTaintedStringUTFChars(this, string, taint, isCopy); }*/
-
-        jobject CallObjectTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallObjectTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
-        jboolean CallBooleanTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallBooleanTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
-        jbyte CallByteTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallByteTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
-        jchar CallCharTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallCharTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
-        jshort CallShortTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallShortTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
-        jint CallIntTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallIntTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
-        jlong CallLongTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallLongTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
-        jfloat CallFloatTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallFloatTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
-        jdouble CallDoubleTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallDoubleTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
-        void CallVoidTaintedMethodA(jobject obj, u4 objTaint, jmethodID mID, u4* retTaint, jvalue* args, u4* taints)
-        { return functions->CallVoidTaintedMethodA(this, obj, objTaint, mID, retTaint, args, taints); }
   
-  /*void        (*SetLongTaintedField)(JNIEnv*, jobject, jfieldID, jlong, u4);
-    void        (*SetFloatTaintedField)(JNIEnv*, jobject, jfieldID, jfloat, u4);
-    void        (*SetDoubleTaintedField)(JNIEnv*, jobject, jfieldID, jdouble, u4);
-    void        (*CallVoidTaintedMethodA)(JNIEnv*, jobject, u4 objTaint, jmethodID, jvalue*, u4*);*/
-
 //#endif // WITH_TAINT_TRACKING
 
 #endif /*__cplusplus*/
