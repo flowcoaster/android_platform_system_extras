@@ -1470,6 +1470,36 @@ static void ReleasePrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, void* arr
 	//free(array); crashes! TODO: but would we need to free this?
 }
 
+//code 68
+static const jchar* GetStringCritical(JNIEnvMod* env, jstring jstr, jboolean* isCopy) {
+	ALOGD("jniEnvMod->GetStringCritical(env=%08x, jstr=%08x, isCopy=%08x)",
+		(int)env, (int)jstr, (int)isCopy);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jstr) + sizeof(jboolean);
+	void* data = malloc(size);
+	memcpy(data, &jstr, sizeof(jstr));
+	if (isCopy != 0) {
+		memcpy(data+sizeof(jstr), isCopy, sizeof(jboolean));
+	} else {
+		jboolean b = 0;
+		memcpy(data+sizeof(jstr), &b, sizeof(jboolean));
+	}
+    ext->execManager->jniCall.function = 68;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	const void* r = ext->execManager->jniCall.param_data;
+	int dalvikP = *((int*)r);
+	r += sizeof(jchar*);
+	int strlen = *((int*)r);
+	r += sizeof(int);
+	jchar* result = (jchar*)malloc(strlen*sizeof(jchar)+1);
+	memcpy(result, r, strlen*sizeof(jchar));
+	ext->execManager->addStringChars(dalvikP, strlen, result);
+	ALOGD("GetStringCritical: %08x -> %s", *result, (char*)result);
+	return (const jchar*)result;
+}
+
 //code 57
 void ReleaseStringCritical(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 	ALOGD("jniEnvMod->ReleaseStringCritical(env=%08x, jstr=%08x, jchars=%08x)",
@@ -1727,7 +1757,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     GetStringUTFRegion,
     GetPrimitiveArrayCritical,
     ReleasePrimitiveArrayCritical,
-    NULL, //GetStringCritical,
+    GetStringCritical,
     ReleaseStringCritical,
     NULL, //NewWeakGlobalRef,
     NULL, //DeleteWeakGlobalRef,
