@@ -79,11 +79,11 @@ include $(BUILD_EXECUTABLE)
 #LOCAL_C_INCLUDES += frameworks/base/include system/core/include frameworks/native/include bionic/libc/include libnativehelper/include
 #include $(BUILD_EXECUTABLE)
 
-include $(CLEAR_VARS)
-LOCAL_C_FLAGS += -DWITH_DALVIK_BINDER_SERVICE=1
-LOCAL_MODULE := testtgw
-LOCAL_MODULE_TAGS := debug
-LOCAL_SRC_FILES := $(wrapper_tester)
-LOCAL_SHARED_LIBRARIES := libutils libcutils libbinder libdl
-LOCAL_C_INCLUDES += frameworks/base/include system/core/include frameworks/native/include bionic/libc/include bionic/libc/arch-arm/include libnativehelper/include
-include $(BUILD_EXECUTABLE)
+#include $(CLEAR_VARS)
+#LOCAL_C_FLAGS += -DWITH_DALVIK_BINDER_SERVICE=1
+#LOCAL_MODULE := testtgw
+#LOCAL_MODULE_TAGS := debug
+#LOCAL_SRC_FILES := $(wrapper_tester)
+#LOCAL_SHARED_LIBRARIES := libutils libcutils libbinder libdl
+#LOCAL_C_INCLUDES += frameworks/base/include system/core/include frameworks/native/include bionic/libc/include bionic/libc/arch-arm/include libnativehelper/include
+#include $(BUILD_EXECUTABLE)

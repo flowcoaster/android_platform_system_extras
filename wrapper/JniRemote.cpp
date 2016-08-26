@@ -450,6 +450,7 @@ static jclass GetObjectClass(JNIEnvMod* env, jobject jobj) {
 	int size = sizeof(jobj);
 	void* data = malloc(size);
 	memcpy(data, &jobj, size);
+	ALOGD("param_data=%08x", (int)(int*)data);
     ext->execManager->jniCall.function = 18;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
@@ -1351,6 +1352,21 @@ static jstring NewStringUTF(JNIEnvMod* env, const char* bytes) {
     return strResult;
 }
 
+//code 69
+static void DeleteWeakGlobalRef(JNIEnvMod* env, jweak jw) {
+	ALOGD("jniEnvMod->DeleteGlobalRef(env=%08x, jweak=%08x)", (int)env, (int)jw);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jw);
+	void* data = malloc(size);
+	memcpy(data, &jw, size);
+    ext->execManager->jniCall.function = 69;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	free(data);
+}
+
+
 //code 13
 static jboolean ExceptionCheck(JNIEnvMod* env) {
 	ALOGD("jniEnvMod->ExceptionCheck(env=%08x)", (int)env);
@@ -1363,6 +1379,25 @@ static jboolean ExceptionCheck(JNIEnvMod* env) {
 	ALOGD("returning %08x", (int)result);
 	return result;
 }
+
+//code 70
+static jbyte* GetByteArrayElements(JNIEnvMod* env, jbyteArray jarr, jboolean* isCopy) {
+	ALOGD("jniEnvMod->GetByteArrayElements(env=%08x, jarr=%08x, isCopy)", (int)env, (int)jarr);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jarr);
+    ext->execManager->jniCall.function = 70;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+	size = *((int*)(ext->execManager->jniCall.param_data));
+	int dalvikP = *((int*)(ext->execManager->jniCall.param_data+sizeof(int)));
+	ALOGD("GetPrimitiveArrayCritical received size=%d, dalvikP=%08x", size, dalvikP);
+	ext->execManager->addArray(jarr, size, dalvikP);
+	void* result = malloc(size);
+	memcpy(result, ext->execManager->jniCall.param_data+sizeof(int)+sizeof(dalvikP), size);
+	return (jbyte*)result;
+}
+
 
 //code 54
 static void GetByteArrayRegion(JNIEnvMod* env, jbyteArray jarr, jsize start, jsize len, jbyte* buf) {
@@ -1717,7 +1752,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //NewFloatArray,
     NULL, //NewDoubleArray,
     NULL, //GetBooleanArrayElements,
-    NULL, //GetByteArrayElements,
+    GetByteArrayElements,
     NULL, //GetCharArrayElements,
     NULL, //GetShortArrayElements,
     NULL, //GetIntArrayElements,
@@ -1760,7 +1795,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     GetStringCritical,
     ReleaseStringCritical,
     NULL, //NewWeakGlobalRef,
-    NULL, //DeleteWeakGlobalRef,
+    DeleteWeakGlobalRef,
     ExceptionCheck,
     NULL, //NewDirectByteBuffer,
     NULL, //GetDirectBufferAddress,

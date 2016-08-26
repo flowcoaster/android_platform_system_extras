@@ -77,6 +77,9 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callGetPrimitiveArrayCritical();
 	void callReleasePrimitiveArrayCritical();
 	void callReleaseStringUTFChars();
+	void callGetStringCritical();
+	void callDeleteWeakGlobalRef();
+	void callGetByteArrayElements();
 	int handleJNIRequest(JValTaint* res, Parcel* reply);
 	void* replydata;
 	void* replytaint;

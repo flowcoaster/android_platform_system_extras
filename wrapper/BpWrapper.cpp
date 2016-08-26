@@ -474,6 +474,7 @@ namespace android{
 
 	void BpWrapper::callGetObjectClass() {
 		jobject jobj = *((jobject*)replydata);
+		ALOGD("CallGetObjectClass read jobj=%08x", (int)jobj);
 		jclass result = jniEnv->GetObjectClass(jobj);
 		size = sizeof(result);
 		taintsize = 0;
@@ -842,6 +843,43 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+	void BpWrapper::callGetStringCritical() {
+		jstring jstr = *((jstring*)replydata);
+		ALOGD("GetStringCritical: jstr=%08x", jstr);
+		jboolean isCopy = *((jboolean*)(replydata+sizeof(jstr)));
+		ALOGD("GetStringCritical: isCopy=%08x", isCopy);
+		const jchar* result = jniEnv->GetStringCritical(jstr, &isCopy);
+		ALOGD("GetStringCritical: %08x", (int)result);
+		int strlen = jniEnv->GetStringLength(jstr);
+		size = sizeof(jchar*)+sizeof(int)+strlen*sizeof(jchar);
+		taintsize = 0;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(jchar*));
+		memcpy(callbackdata+sizeof(jchar*), &strlen, sizeof(jchar*));
+		memcpy(callbackdata+sizeof(jchar*)+sizeof(strlen), result, size);
+	}
+
+	void BpWrapper::callDeleteWeakGlobalRef() {
+		jweak jw = *((jweak*)replydata);
+		jniEnv->DeleteWeakGlobalRef(jw);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callGetByteArrayElements() {
+		jbyteArray jarr = *((jbyteArray*)replydata);
+		jboolean fake = 0;
+		void* result = jniEnv->GetByteArrayElements(jarr, &fake);
+		ALOGD("dalvik void pointer: %08x", (int)result);
+		size = jniEnv->GetArrayLength(jarr)*sizeof(jbyte);
+		taintsize = 0;
+		callbackdata = malloc(size + sizeof(size) + sizeof(result));
+		memcpy(callbackdata, &size, sizeof(size));
+		memcpy(callbackdata+sizeof(size), &result, sizeof(result));
+		memcpy(callbackdata+sizeof(size)+sizeof(result), result, size);
+	}
+
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
 	    int function, taintsize;
 	    reply->readInt32(&function);
@@ -850,6 +888,7 @@ namespace android{
 	    ALOGD("function=%d, length=%d, taintsize=%d", function, replylength, taintsize);
 	    replydata = malloc(replylength); //freed by individual JNI functions
 	    reply->read(replydata, replylength);
+		ALOGD("replydata=%08x", (int)(int*)replydata);
 		if (taintsize != 0) {
 			replytaint = malloc(taintsize);
 			reply->read(replytaint, taintsize);
@@ -922,6 +961,9 @@ namespace android{
 			case 65: callGetPrimitiveArrayCritical(); break;
 			case 66: callReleasePrimitiveArrayCritical(); break;
 			case 67: callReleaseStringUTFChars(); break;
+			case 68: callGetStringCritical(); break;
+			case 69: callDeleteWeakGlobalRef(); break;
+			case 70: callGetByteArrayElements(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);
