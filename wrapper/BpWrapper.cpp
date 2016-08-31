@@ -204,11 +204,11 @@ namespace android{
 		jfieldID fieldID = *((jfieldID*)r2);
 		u4 taint = 0;
 		jobject result = jniEnv->GetObjectTaintedField(jobj, fieldID, &taint);
-		size = sizeof(result) + sizeof(taint);
-		callbackdata = malloc(size);
 		taintsize = sizeof(taint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
 		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+		memcpy((callbackdata+sizeof(result)), &taint, taintsize);
 		ALOGD("GetObjectField()->%08x", (int)result);
 	}
 
@@ -640,36 +640,348 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+	//with taint support
 	void BpWrapper::callCallNonvirtualObjectMethodA() {
 		jobject jobj = *((jobject*)replydata);
 		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
 		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
-		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc));
-		jobject result = jniEnv->CallNonvirtualObjectMethodA(jobj, jc, methodID, args);
-		size = sizeof(result);
-		taintsize = 0;
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jobject result = jniEnv->CallNonvirtualObjectTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
 		callbackdata = malloc(size);
-		memcpy(callbackdata, &result, size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
 	}
 
+	//with taint support
+	void BpWrapper::callCallNonvirtualBooleanMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jboolean result = jniEnv->CallNonvirtualBooleanTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallNonvirtualByteMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jbyte result = jniEnv->CallNonvirtualByteTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallNonvirtualCharMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jchar result = jniEnv->CallNonvirtualCharTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallNonvirtualShortMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jshort result = jniEnv->CallNonvirtualShortTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallNonvirtualIntMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jint result = jniEnv->CallNonvirtualIntTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallNonvirtualLongMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jlong result = jniEnv->CallNonvirtualLongTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallNonvirtualFloatMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jfloat result = jniEnv->CallNonvirtualFloatTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallNonvirtualDoubleMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jdouble result = jniEnv->CallNonvirtualDoubleTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallNonvirtualVoidMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jclass jc = *((jclass*)(replydata+sizeof(jobj)));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jniEnv->CallNonvirtualVoidTaintedMethodA(jobj, objTaint, jc, 
+			methodID, &resultTaint, args, paramTaints);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	//with taint support
 	void BpWrapper::callCallStaticVoidMethodA() {
 		jclass jc = *((jclass*)(replydata));
 		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
-		jvalue* args = (jvalue*)(replydata+sizeof(methodID)+sizeof(jc));
-		jniEnv->CallStaticVoidMethodA(jc, methodID, args);
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jniEnv->CallStaticVoidTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
 		taintsize = size = 0;
 		callbackdata = malloc(size);
 	}
 
+	//with taint support
+	void BpWrapper::callCallStaticObjectMethodA() {
+		jclass jc = *((jclass*)(replydata));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jobject result = jniEnv->CallStaticObjectTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallStaticBooleanMethodA() {
+		jclass jc = *((jclass*)(replydata));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jboolean result = jniEnv->CallStaticBooleanTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallStaticByteMethodA() {
+		jclass jc = *((jclass*)(replydata));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jbyte result = jniEnv->CallStaticByteTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallStaticCharMethodA() {
+		jclass jc = *((jclass*)(replydata));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jchar result = jniEnv->CallStaticCharTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
 	void BpWrapper::callCallStaticShortMethodA() {
 		jclass jc = *((jclass*)(replydata));
 		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
-		jvalue* args = (jvalue*)(replydata+sizeof(methodID)+sizeof(jc));
-		jshort result = jniEnv->CallStaticShortMethodA(jc, methodID, args);
-		size = sizeof(result);
-		taintsize = 0;
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jshort result = jniEnv->CallStaticShortTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
 		callbackdata = malloc(size);
-		memcpy(callbackdata, &result, size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallStaticIntMethodA() {
+		jclass jc = *((jclass*)(replydata));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jint result = jniEnv->CallStaticIntTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallStaticLongMethodA() {
+		jclass jc = *((jclass*)(replydata));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jlong result = jniEnv->CallStaticLongTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallStaticFloatMethodA() {
+		jclass jc = *((jclass*)(replydata));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jfloat result = jniEnv->CallStaticFloatTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallStaticDoubleMethodA() {
+		jclass jc = *((jclass*)(replydata));
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jc)));
+		int paramSize = *((int*)(replydata+sizeof(jc)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
+		u4* paramTaints = (u4*)(args+paramSize);
+		u4 resultTaint = 0;
+		jdouble result = jniEnv->CallStaticDoubleTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
 	}
 
 	void BpWrapper::callSetShortArrayRegion() {
@@ -699,7 +1011,7 @@ namespace android{
 
 	void BpWrapper::callGetStringChars() {
 		jstring jstr = *((jstring*)replydata);
-		ALOGD("GetStringChars: jstr=%08x", jstr);
+		ALOGD("GetStringChars: jstr=%08x", (int)jstr);
 		jboolean isCopy = *((jboolean*)(replydata+sizeof(jstr)));
 		ALOGD("GetStringChars: isCopy=%08x", isCopy);
 		const jchar* result = jniEnv->GetStringChars(jstr, &isCopy);
@@ -845,7 +1157,7 @@ namespace android{
 
 	void BpWrapper::callGetStringCritical() {
 		jstring jstr = *((jstring*)replydata);
-		ALOGD("GetStringCritical: jstr=%08x", jstr);
+		ALOGD("GetStringCritical: jstr=%08x", (int)jstr);
 		jboolean isCopy = *((jboolean*)(replydata+sizeof(jstr)));
 		ALOGD("GetStringCritical: isCopy=%08x", isCopy);
 		const jchar* result = jniEnv->GetStringCritical(jstr, &isCopy);
@@ -878,6 +1190,91 @@ namespace android{
 		memcpy(callbackdata, &size, sizeof(size));
 		memcpy(callbackdata+sizeof(size), &result, sizeof(result));
 		memcpy(callbackdata+sizeof(size)+sizeof(result), result, size);
+	}
+
+	//with taint support
+	void BpWrapper::callCallByteMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jbyte result = jniEnv->CallByteTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallCharMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jchar result = jniEnv->CallCharTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallLongMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jlong result = jniEnv->CallLongTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallDoubleMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jdouble result = jniEnv->CallDoubleTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	//with taint support
+	void BpWrapper::callCallShortMethodA() {
+		jobject jobj = *((jobject*)replydata);
+		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)));
+		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(methodID)));
+		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize));
+		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
+		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 resultTaint = 0;
+		jshort result = jniEnv->CallShortTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
+		taintsize = sizeof(resultTaint);
+		size = sizeof(result) + taintsize;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
 	}
 
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
@@ -964,6 +1361,28 @@ namespace android{
 			case 68: callGetStringCritical(); break;
 			case 69: callDeleteWeakGlobalRef(); break;
 			case 70: callGetByteArrayElements(); break;
+			case 71: callCallByteMethodA(); break;
+			case 72: callCallCharMethodA(); break;			
+			case 73: callCallLongMethodA(); break;			
+			case 74: callCallDoubleMethodA(); break;			
+			case 75: callCallNonvirtualBooleanMethodA(); break;			
+			case 76: callCallNonvirtualByteMethodA(); break;			
+			case 77: callCallNonvirtualCharMethodA(); break;			
+			case 78: callCallNonvirtualShortMethodA(); break;			
+			case 79: callCallNonvirtualIntMethodA(); break;			
+			case 80: callCallNonvirtualLongMethodA(); break;			
+			case 81: callCallNonvirtualFloatMethodA(); break;			
+			case 82: callCallNonvirtualDoubleMethodA(); break;			
+			case 83: callCallNonvirtualVoidMethodA(); break;			
+			case 84: callCallShortMethodA(); break;			
+			case 85: callCallStaticCharMethodA(); break;			
+			case 86: callCallStaticByteMethodA(); break;			
+			case 87: callCallStaticBooleanMethodA(); break;			
+			case 88: callCallStaticObjectMethodA(); break;			
+			case 89: callCallStaticIntMethodA(); break;			
+			case 90: callCallStaticLongMethodA(); break;			
+			case 91: callCallStaticFloatMethodA(); break;			
+			case 92: callCallStaticDoubleMethodA(); break;			
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);
