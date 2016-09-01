@@ -2498,6 +2498,14 @@ static jboolean ExceptionCheck(JNIEnvMod* env) {
 	return result;
 }
 
+#define GET_GENERIC_ARRAYELEMENTS() \
+	size = *((int*)(ext->execManager->jniCall.param_data));\
+	int dalvikP = *((int*)(ext->execManager->jniCall.param_data+sizeof(int)));\
+	ALOGD("GetPrimitiveArrayCritical received size=%d, dalvikP=%08x", size, dalvikP);\
+	ext->execManager->addArray(jarr, size, dalvikP);\
+	void* result = malloc(size);\
+	memcpy(result, ext->execManager->jniCall.param_data+sizeof(int)+sizeof(dalvikP), size);
+
 //code 70
 static jbyte* GetByteArrayElements(JNIEnvMod* env, jbyteArray jarr, jboolean* isCopy) {
 	ALOGD("jniEnvMod->GetByteArrayElements(env=%08x, jarr=%08x, isCopy)", (int)env, (int)jarr);
@@ -2507,33 +2515,178 @@ static jbyte* GetByteArrayElements(JNIEnvMod* env, jbyteArray jarr, jboolean* is
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = &jarr;
     ext->execManager->reqJniCall();
-	size = *((int*)(ext->execManager->jniCall.param_data));
-	int dalvikP = *((int*)(ext->execManager->jniCall.param_data+sizeof(int)));
-	ALOGD("GetPrimitiveArrayCritical received size=%d, dalvikP=%08x", size, dalvikP);
-	ext->execManager->addArray(jarr, size, dalvikP);
-	void* result = malloc(size);
-	memcpy(result, ext->execManager->jniCall.param_data+sizeof(int)+sizeof(dalvikP), size);
+	GET_GENERIC_ARRAYELEMENTS();
 	return (jbyte*)result;
 }
 
+//code 99
+static jshort* GetShortArrayElements(JNIEnvMod* env, jshortArray jarr, jboolean* isCopy) {
+	ALOGD("jniEnvMod->GetShortArrayElements(env=%08x, jarr=%08x, isCopy)", (int)env, (int)jarr);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jarr);
+    ext->execManager->jniCall.function = 99;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+	GET_GENERIC_ARRAYELEMENTS();
+	return (jshort*)result;
+}
+
+//code 97
+static jlong* GetLongArrayElements(JNIEnvMod* env, jlongArray jarr, jboolean* isCopy) {
+	ALOGD("jniEnvMod->GetLongArrayElements(env=%08x, jarr=%08x, isCopy)", (int)env, (int)jarr);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jarr);
+    ext->execManager->jniCall.function = 97;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+	GET_GENERIC_ARRAYELEMENTS();
+	return (jlong*)result;
+}
+
+//code 98
+static jdouble* GetDoubleArrayElements(JNIEnvMod* env, jdoubleArray jarr, jboolean* isCopy) {
+	ALOGD("jniEnvMod->GetDoubleArrayElements(env=%08x, jarr=%08x, isCopy)", (int)env, (int)jarr);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jarr);
+    ext->execManager->jniCall.function = 98;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+	GET_GENERIC_ARRAYELEMENTS();
+	return (jdouble*)result;
+}
+
+//code 102
+static void ReleaseBooleanArrayElements(JNIEnvMod* env, jbooleanArray jarr, jboolean* elems, jint mode) {
+	ALOGD("jniEnvMod->ReleaseByteArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
+		(int)env, (int)jarr, (int)elems, mode);
+	if (mode == 1) return; // 1 = JNI_COMMIT
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    ext->execManager->jniCall.function = 102;
+    ext->execManager->jniCall.length = sizeof(jarr);
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+}
+
+//code 101
+static void ReleaseByteArrayElements(JNIEnvMod* env, jbyteArray jarr, jbyte* elems, jint mode) {
+	ALOGD("jniEnvMod->ReleaseByteArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
+		(int)env, (int)jarr, (int)elems, mode);
+	if (mode == 1) return; // 1 = JNI_COMMIT
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    ext->execManager->jniCall.function = 101;
+    ext->execManager->jniCall.length = sizeof(jarr);
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+}
+
+//code 103
+static void ReleaseCharArrayElements(JNIEnvMod* env, jcharArray jarr, jchar* elems, jint mode) {
+	ALOGD("jniEnvMod->ReleaseCharArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
+		(int)env, (int)jarr, (int)elems, mode);
+	if (mode == 1) return; // 1 = JNI_COMMIT
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    ext->execManager->jniCall.function = 103;
+    ext->execManager->jniCall.length = sizeof(jarr);
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+}
+
+//code 104
+static void ReleaseShortArrayElements(JNIEnvMod* env, jshortArray jarr, jshort* elems, jint mode) {
+	ALOGD("jniEnvMod->ReleaseShortArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
+		(int)env, (int)jarr, (int)elems, mode);
+	if (mode == 1) return; // 1 = JNI_COMMIT
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    ext->execManager->jniCall.function = 104;
+    ext->execManager->jniCall.length = sizeof(jarr);
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+}
+
+//code 105
+static void ReleaseIntArrayElements(JNIEnvMod* env, jintArray jarr, jint* elems, jint mode) {
+	ALOGD("jniEnvMod->ReleaseIntArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
+		(int)env, (int)jarr, (int)elems, mode);
+	if (mode == 1) return; // 1 = JNI_COMMIT
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    ext->execManager->jniCall.function = 105;
+    ext->execManager->jniCall.length = sizeof(jarr);
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+}
+
+//code 106
+static void ReleaseLongArrayElements(JNIEnvMod* env, jlongArray jarr, jlong* elems, jint mode) {
+	ALOGD("jniEnvMod->ReleaseLongArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
+		(int)env, (int)jarr, (int)elems, mode);
+	if (mode == 1) return; // 1 = JNI_COMMIT
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    ext->execManager->jniCall.function = 106;
+    ext->execManager->jniCall.length = sizeof(jarr);
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+}
+
+//code 107
+static void ReleaseFloatArrayElements(JNIEnvMod* env, jfloatArray jarr, jfloat* elems, jint mode) {
+	ALOGD("jniEnvMod->ReleaseFloatArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
+		(int)env, (int)jarr, (int)elems, mode);
+	if (mode == 1) return; // 1 = JNI_COMMIT
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    ext->execManager->jniCall.function = 107;
+    ext->execManager->jniCall.length = sizeof(jarr);
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+}
+
+//code 108
+static void ReleaseDoubleArrayElements(JNIEnvMod* env, jdoubleArray jarr, jdouble* elems, jint mode) {
+	ALOGD("jniEnvMod->ReleaseDoubleArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
+		(int)env, (int)jarr, (int)elems, mode);
+	if (mode == 1) return; // 1 = JNI_COMMIT
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    ext->execManager->jniCall.function = 108;
+    ext->execManager->jniCall.length = sizeof(jarr);
+    ext->execManager->jniCall.param_data = &jarr;
+    ext->execManager->reqJniCall();
+}
+
+#define GENERIC_GETARRAYREGION() \
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;\
+	int size = sizeof(jarr) + 2*sizeof(jsize);\
+	void* data = malloc(size);\
+	memcpy(data, &jarr, sizeof(jarr));\
+	void* d2 = data + sizeof(jarr);\
+	memcpy(d2, &start, sizeof(start));\
+	d2 += sizeof(start);\
+	memcpy(d2, &len, sizeof(len));
 
 //code 54
 static void GetByteArrayRegion(JNIEnvMod* env, jbyteArray jarr, jsize start, jsize len, jbyte* buf) {
 	ALOGD("jniEnvMod->GetByteArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
 		(int)env, (int)jarr, start, len, (int) buf);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jarr) + 2*sizeof(jsize);
-	void* data = malloc(size);
-	memcpy(data, &jarr, sizeof(jarr));
-	void* d2 = data + sizeof(jarr);
-	memcpy(d2, &start, sizeof(start));
-	d2 += sizeof(start);
-	memcpy(d2, &len, sizeof(len));
+	GENERIC_GETARRAYREGION();
     ext->execManager->jniCall.function = 54;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
 	memcpy(buf, ext->execManager->jniCall.param_data, sizeof(jbyte)*len);
+	free(data);
+}
+
+//code 100
+static void GetDoubleArrayRegion(JNIEnvMod* env, jdoubleArray jarr, jsize start, jsize len, jdouble* buf) {
+	ALOGD("jniEnvMod->GetDoubleArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+		(int)env, (int)jarr, start, len, (int) buf);
+	GENERIC_GETARRAYREGION();
+    ext->execManager->jniCall.function = 100;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	memcpy(buf, ext->execManager->jniCall.param_data, sizeof(jdouble)*len);
 	free(data);
 }
 
@@ -2926,19 +3079,19 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //GetBooleanArrayElements,
     GetByteArrayElements,
     NULL, //GetCharArrayElements,
-    NULL, //GetShortArrayElements,
+    GetShortArrayElements,
     NULL, //GetIntArrayElements,
-    NULL, //GetLongArrayElements,
+    GetLongArrayElements,
     NULL, //GetFloatArrayElements,
-    NULL, //GetDoubleArrayElements,
-    NULL, //ReleaseBooleanArrayElements,
-    NULL, //ReleaseByteArrayElements,
-    NULL, //ReleaseCharArrayElements,
-    NULL, //ReleaseShortArrayElements,
-    NULL, //ReleaseIntArrayElements,
-    NULL, //ReleaseLongArrayElements,
-    NULL, //ReleaseFloatArrayElements,
-    NULL, //ReleaseDoubleArrayElements,
+    GetDoubleArrayElements,
+    ReleaseBooleanArrayElements,
+    ReleaseByteArrayElements,
+    ReleaseCharArrayElements,
+    ReleaseShortArrayElements,
+    ReleaseIntArrayElements,
+    ReleaseLongArrayElements,
+    ReleaseFloatArrayElements,
+    ReleaseDoubleArrayElements,
     NULL, //GetBooleanArrayRegion,
     GetByteArrayRegion,
     NULL, //GetCharArrayRegion,
@@ -2946,7 +3099,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //GetIntArrayRegion,
     NULL, //GetLongArrayRegion,
     NULL, //GetFloatArrayRegion,
-    NULL, //GetDoubleArrayRegion,
+    GetDoubleArrayRegion,
     NULL, //SetBooleanArrayRegion,
     SetByteArrayRegion,
     SetCharArrayRegion,
