@@ -1415,6 +1415,87 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+	void BpWrapper::callNewWeakGlobalRef() {
+		jobject jobj = *((jobject*)replydata);
+		jweak result = jniEnv->NewWeakGlobalRef(jobj);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+	}
+
+	void BpWrapper::callNewBooleanArray() {
+		jsize length = *((jsize*)replydata);
+		jbooleanArray result = jniEnv->NewBooleanArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewByteArray() {
+		jsize length = *((jsize*)replydata);
+		jbyteArray result = jniEnv->NewByteArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewCharArray() {
+		jsize length = *((jsize*)replydata);
+		jcharArray result = jniEnv->NewCharArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewShortArray() {
+		jsize length = *((jsize*)replydata);
+		jshortArray result = jniEnv->NewShortArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewIntArray() {
+		jsize length = *((jsize*)replydata);
+		jintArray result = jniEnv->NewIntArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewLongArray() {
+		jsize length = *((jsize*)replydata);
+		jlongArray result = jniEnv->NewLongArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewFloatArray() {
+		jsize length = *((jsize*)replydata);
+		jfloatArray result = jniEnv->NewFloatArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewDoubleArray() {
+		jsize length = *((jsize*)replydata);
+		jdoubleArray result = jniEnv->NewDoubleArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
 	    int function, taintsize;
 	    reply->readInt32(&function);
@@ -1537,6 +1618,15 @@ namespace android{
 			case 106: callReleaseLongArrayElements(); break;
 			case 107: callReleaseFloatArrayElements(); break;
 			case 108: callReleaseDoubleArrayElements(); break;
+			case 109: callNewWeakGlobalRef(); break;
+			case 110: callNewBooleanArray(); break;
+			case 111: callNewByteArray(); break;
+			case 112: callNewCharArray(); break;
+			case 113: callNewShortArray(); break;
+			case 114: callNewIntArray(); break;
+			case 115: callNewLongArray(); break;
+			case 116: callNewFloatArray(); break;
+			case 117: callNewDoubleArray(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);

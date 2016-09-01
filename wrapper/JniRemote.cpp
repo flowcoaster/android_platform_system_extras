@@ -2410,6 +2410,20 @@ void ReleaseStringChars(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 	ext->execManager->deleteCharsEntry(chars);
 }
 
+//code 2
+static jstring NewStringUTF(JNIEnvMod* env, const char* bytes) {
+    ALOGD("jniEnvMod->NewStringUTF(env=%08x, bytes=%08x (%s))", (int)env, (int)bytes, bytes);
+    JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    int size = strlen(bytes)+1; //+1 for terminating 0
+    ext->execManager->jniCall.function = 2;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = bytes;
+    ext->execManager->reqJniCall();
+    jstring strResult = (jstring)*(int*)(ext->execManager->jniCall.param_data);
+    ALOGD("returning %08x", (int)strResult);
+    return strResult;
+}
+
 //code 1
 static const char* GetStringUTFChars(JNIEnvMod* env, jstring jstr, jboolean* isCopy) {
 	ALOGD("jniEnvMod->GetStringUTFChars(env=%08x, jstr=%08x, isCopy=%08x)",
@@ -2456,45 +2470,99 @@ static void ReleaseStringUTFChars(JNIEnvMod* env, jstring jstr, const char* utf)
 	free(data);
 }
 
-//code 2
-static jstring NewStringUTF(JNIEnvMod* env, const char* bytes) {
-    ALOGD("jniEnvMod->NewStringUTF(env=%08x, bytes=%08x (%s))", (int)env, (int)bytes, bytes);
-    JNIEnvModExt* ext = (JNIEnvModExt*)env;
-    int size = strlen(bytes)+1; //+1 for terminating 0
-    ext->execManager->jniCall.function = 2;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = bytes;
-    ext->execManager->reqJniCall();
-    jstring strResult = (jstring)*(int*)(ext->execManager->jniCall.param_data);
-    ALOGD("returning %08x", (int)strResult);
-    return strResult;
+//code 110
+static jbooleanArray NewBooleanArray(JNIEnvMod* env, jsize length) {
+	ALOGD("jniEnvMod->NewBooleanArray(env=%08x, length=%08x)", (int)env, length);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 110;
+    em->jniCall.length = sizeof(length);
+    em->jniCall.param_data = &length;
+    em->reqJniCall();
+	jbooleanArray result = *(jbooleanArray*)(em->jniCall.param_data);
+	return result;
 }
 
-//code 69
-static void DeleteWeakGlobalRef(JNIEnvMod* env, jweak jw) {
-	ALOGD("jniEnvMod->DeleteGlobalRef(env=%08x, jweak=%08x)", (int)env, (int)jw);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jw);
-	void* data = malloc(size);
-	memcpy(data, &jw, size);
-    ext->execManager->jniCall.function = 69;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	free(data);
+//code 111
+static jbyteArray NewByteArray(JNIEnvMod* env, jsize length) {
+	ALOGD("jniEnvMod->NewByteArray(env=%08x, length=%08x)", (int)env, length);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 111;
+    em->jniCall.length = sizeof(length);
+    em->jniCall.param_data = &length;
+    em->reqJniCall();
+	jbyteArray result = *(jbyteArray*)(em->jniCall.param_data);
+	return result;
 }
 
+//code 112
+static jcharArray NewCharArray(JNIEnvMod* env, jsize length) {
+	ALOGD("jniEnvMod->NewCharArray(env=%08x, length=%08x)", (int)env, length);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 113;
+    em->jniCall.length = sizeof(length);
+    em->jniCall.param_data = &length;
+    em->reqJniCall();
+	jcharArray result = *(jcharArray*)(em->jniCall.param_data);
+	return result;
+}
 
-//code 13
-static jboolean ExceptionCheck(JNIEnvMod* env) {
-	ALOGD("jniEnvMod->ExceptionCheck(env=%08x)", (int)env);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-    ext->execManager->jniCall.function = 13;
-    ext->execManager->jniCall.length = 0;
-    ext->execManager->jniCall.param_data = 0;
-    ext->execManager->reqJniCall();
-	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);
-	ALOGD("returning %08x", (int)result);
+//code 113
+static jshortArray NewShortArray(JNIEnvMod* env, jsize length) {
+	ALOGD("jniEnvMod->NewShortArray(env=%08x, length=%08x)", (int)env, length);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 113;
+    em->jniCall.length = sizeof(length);
+    em->jniCall.param_data = &length;
+    em->reqJniCall();
+	jshortArray result = *(jshortArray*)(em->jniCall.param_data);
+	return result;
+}
+
+//code 114
+static jintArray NewIntArray(JNIEnvMod* env, jsize length) {
+	ALOGD("jniEnvMod->NewIntArray(env=%08x, length=%08x)", (int)env, length);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 114;
+    em->jniCall.length = sizeof(length);
+    em->jniCall.param_data = &length;
+    em->reqJniCall();
+	jintArray result = *(jintArray*)(em->jniCall.param_data);
+	return result;
+}
+
+//code 115
+static jlongArray NewLongArray(JNIEnvMod* env, jsize length) {
+	ALOGD("jniEnvMod->NewLongArray(env=%08x, length=%08x)", (int)env, length);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 115;
+    em->jniCall.length = sizeof(length);
+    em->jniCall.param_data = &length;
+    em->reqJniCall();
+	jlongArray result = *(jlongArray*)(em->jniCall.param_data);
+	return result;
+}
+
+//code 116
+static jfloatArray NewFloatArray(JNIEnvMod* env, jsize length) {
+	ALOGD("jniEnvMod->NewFloatArray(env=%08x, length=%08x)", (int)env, length);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 116;
+    em->jniCall.length = sizeof(length);
+    em->jniCall.param_data = &length;
+    em->reqJniCall();
+	jfloatArray result = *(jfloatArray*)(em->jniCall.param_data);
+	return result;
+}
+
+//code 117
+static jdoubleArray NewDoubleArray(JNIEnvMod* env, jsize length) {
+	ALOGD("jniEnvMod->NewDoubleArray(env=%08x, length=%08x)", (int)env, length);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 117;
+    em->jniCall.length = sizeof(length);
+    em->jniCall.param_data = &length;
+    em->reqJniCall();
+	jdoubleArray result = *(jdoubleArray*)(em->jniCall.param_data);
 	return result;
 }
 
@@ -2890,6 +2958,45 @@ void ReleaseStringCritical(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 	const jchar* result = (jchar*)ext->execManager->jniCall.param_data;
 }
 
+//code 109
+static jweak NewWeakGlobalRef(JNIEnvMod* env, jobject jobj) {
+	ALOGD("jniEnvMod->NewWeakGlobalRef(env=%08x, jobj=%08x)", (int)env, (int)jobj);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 109;
+    em->jniCall.length = sizeof(jobj);
+    em->jniCall.param_data = &jobj;
+    em->reqJniCall();
+	jweak result = *(jweak*)(em->jniCall.param_data);
+	return result;
+}
+
+//code 69
+static void DeleteWeakGlobalRef(JNIEnvMod* env, jweak jw) {
+	ALOGD("jniEnvMod->DeleteWeakGlobalRef(env=%08x, jweak=%08x)", (int)env, (int)jw);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	int size = sizeof(jw);
+	void* data = malloc(size);
+	memcpy(data, &jw, size);
+    ext->execManager->jniCall.function = 69;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	free(data);
+}
+
+//code 13
+static jboolean ExceptionCheck(JNIEnvMod* env) {
+	ALOGD("jniEnvMod->ExceptionCheck(env=%08x)", (int)env);
+	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+    ext->execManager->jniCall.function = 13;
+    ext->execManager->jniCall.length = 0;
+    ext->execManager->jniCall.param_data = 0;
+    ext->execManager->reqJniCall();
+	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);
+	ALOGD("returning %08x", (int)result);
+	return result;
+}
+
 
 //function table just like in dalvik/vm/Jni.cpp
 static const struct JNINativeInterfaceMod gNativeInterface = {
@@ -3068,14 +3175,14 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //NewObjectArray,
     NULL, //GetObjectArrayElement,
     NULL, //SetObjectArrayElement,
-    NULL, //NewBooleanArray,
-    NULL, //NewByteArray,
-    NULL, //NewCharArray,
-    NULL, //NewShortArray,
-    NULL, //NewIntArray,
-    NULL, //NewLongArray,
-    NULL, //NewFloatArray,
-    NULL, //NewDoubleArray,
+    NewBooleanArray,
+    NewByteArray,
+    NewCharArray,
+    NewShortArray,
+    NewIntArray,
+    NewLongArray,
+    NewFloatArray,
+    NewDoubleArray,
     NULL, //GetBooleanArrayElements,
     GetByteArrayElements,
     NULL, //GetCharArrayElements,
@@ -3119,7 +3226,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     ReleasePrimitiveArrayCritical,
     GetStringCritical,
     ReleaseStringCritical,
-    NULL, //NewWeakGlobalRef,
+    NewWeakGlobalRef,
     DeleteWeakGlobalRef,
     ExceptionCheck,
     NULL, //NewDirectByteBuffer,
