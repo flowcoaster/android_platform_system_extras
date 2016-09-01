@@ -984,15 +984,58 @@ namespace android{
 		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
 	}
 
+#define ARRAYREGION_EXTRACT() \
+		jsize start = *((jsize*)(replydata+sizeof(jarr)));\
+		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+
+	void BpWrapper::callSetByteArrayRegion() {
+		jbyteArray jarr = *((jbyteArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jbyte* buf = (jbyte*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetByteArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetCharArrayRegion() {
+		jcharArray jarr = *((jcharArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jchar* buf = (jchar*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetCharArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
 	void BpWrapper::callSetShortArrayRegion() {
 		jshortArray jarr = *((jshortArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+		ARRAYREGION_EXTRACT();
 		const jshort* buf = (jshort*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
 		//ALOGD("buf[0]=%08x, buf[1]=%08x, buf[2]=%08x", buf[0], buf[1], buf[2]);
 		//ALOGD("calling SetShortArrayRegion(jarr=%08x, start=%08x, len=%08x, buf=%08x",
 		//	jarr, start, len, buf);
 		jniEnv->SetShortArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetIntArrayRegion() {
+		jintArray jarr = *((jintArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jint* buf = (jint*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetIntArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetFloatArrayRegion() {
+		jfloatArray jarr = *((jfloatArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jfloat* buf = (jfloat*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetFloatArrayRegion(jarr, start, len, buf);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
@@ -1382,7 +1425,11 @@ namespace android{
 			case 89: callCallStaticIntMethodA(); break;			
 			case 90: callCallStaticLongMethodA(); break;			
 			case 91: callCallStaticFloatMethodA(); break;			
-			case 92: callCallStaticDoubleMethodA(); break;			
+			case 92: callCallStaticDoubleMethodA(); break;
+			case 93: callSetFloatArrayRegion(); break;
+			case 94: callSetByteArrayRegion(); break;
+			case 95: callSetCharArrayRegion(); break;
+			case 96: callSetIntArrayRegion(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);

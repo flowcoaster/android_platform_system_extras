@@ -2537,22 +2537,76 @@ static void GetByteArrayRegion(JNIEnvMod* env, jbyteArray jarr, jsize start, jsi
 	free(data);
 }
 
+#define ARRAYREGION_COPYOUT() \
+	JNIEnvModExt* ext = (JNIEnvModExt*)env; \
+	int size = sizeof(jarr) + 2*sizeof(jsize) + len*sizeof(*buf);\
+	void* data = malloc(size);\
+	memcpy(data, &jarr, sizeof(jarr));\
+	void* d2 = data + sizeof(jarr);\
+	memcpy(d2, &start, sizeof(start));\
+	d2 += sizeof(start);\
+	memcpy(d2, &len, sizeof(len));\
+	d2 += sizeof(len);
+
+//code 94
+static void SetByteArrayRegion(JNIEnvMod* env, jbyteArray jarr, jsize start, jsize len, const jbyte* buf) {
+	ALOGD("jniEnvMod->SetByteArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+		(int)env, (int)jarr, start, len, (int) buf);
+	ARRAYREGION_COPYOUT();
+	memcpy(d2, buf, len*sizeof(jbyte));
+    ext->execManager->jniCall.function = 94;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	free(data);
+}
+
+//code 95
+static void SetCharArrayRegion(JNIEnvMod* env, jcharArray jarr, jsize start, jsize len, const jchar* buf) {
+	ALOGD("jniEnvMod->SetCharArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+		(int)env, (int)jarr, start, len, (int) buf);
+	ARRAYREGION_COPYOUT();
+	memcpy(d2, buf, len*sizeof(jchar));
+    ext->execManager->jniCall.function = 95;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	free(data);
+}
+
 //code 53
 static void SetShortArrayRegion(JNIEnvMod* env, jshortArray jarr, jsize start, jsize len, const jshort* buf) {
 	ALOGD("jniEnvMod->SetShortArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
 		(int)env, (int)jarr, start, len, (int) buf);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jarr) + 2*sizeof(jsize) + len*sizeof(*buf);
-	void* data = malloc(size);
-	memcpy(data, &jarr, sizeof(jarr));
-	void* d2 = data + sizeof(jarr);
-	memcpy(d2, &start, sizeof(start));
-	d2 += sizeof(start);
-	memcpy(d2, &len, sizeof(len));
-	d2 += sizeof(len);
-	//ALOGD("buf[0]=%08x, buf[1]=%08x, buf[2]=%08x", buf[0], buf[1], buf[2]);
+	ARRAYREGION_COPYOUT();
 	memcpy(d2, buf, len*sizeof(jshort));
     ext->execManager->jniCall.function = 53;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	free(data);
+}
+
+//code 96
+static void SetIntArrayRegion(JNIEnvMod* env, jintArray jarr, jsize start, jsize len, const jint* buf) {
+	ALOGD("jniEnvMod->SetIntArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+		(int)env, (int)jarr, start, len, (int) buf);
+	ARRAYREGION_COPYOUT();
+	memcpy(d2, buf, len*sizeof(jint));
+    ext->execManager->jniCall.function = 96;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	free(data);
+}
+
+//code 93
+static void SetFloatArrayRegion(JNIEnvMod* env, jfloatArray jarr, jsize start, jsize len, const jfloat* buf) {
+	ALOGD("jniEnvMod->SetFloatArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+		(int)env, (int)jarr, start, len, (int) buf);
+	ARRAYREGION_COPYOUT();
+	memcpy(d2, buf, len*sizeof(jfloat));
+    ext->execManager->jniCall.function = 93;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
@@ -2894,12 +2948,12 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //GetFloatArrayRegion,
     NULL, //GetDoubleArrayRegion,
     NULL, //SetBooleanArrayRegion,
-    NULL, //SetByteArrayRegion,
-    NULL, //SetCharArrayRegion,
+    SetByteArrayRegion,
+    SetCharArrayRegion,
     SetShortArrayRegion,
-    NULL, //SetIntArrayRegion,
+    SetIntArrayRegion,
     NULL, //SetLongArrayRegion,
-    NULL, //SetFloatArrayRegion,
+    SetFloatArrayRegion,
     NULL, //SetDoubleArrayRegion,
     NULL, //RegisterNatives,
     NULL, //UnregisterNatives,

@@ -102,6 +102,10 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callCallStaticLongMethodA();
 	void callCallStaticFloatMethodA();
 	void callCallStaticDoubleMethodA();
+	void callSetFloatArrayRegion();
+	void callSetByteArrayRegion();
+	void callSetCharArrayRegion();
+	void callSetIntArrayRegion();
 	int handleJNIRequest(JValTaint* res, Parcel* reply);
 	void* replydata;
 	void* replytaint;
