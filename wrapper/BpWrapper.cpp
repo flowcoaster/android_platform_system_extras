@@ -984,15 +984,58 @@ namespace android{
 		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
 	}
 
+#define ARRAYREGION_EXTRACT() \
+		jsize start = *((jsize*)(replydata+sizeof(jarr)));\
+		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+
+	void BpWrapper::callSetByteArrayRegion() {
+		jbyteArray jarr = *((jbyteArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jbyte* buf = (jbyte*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetByteArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetCharArrayRegion() {
+		jcharArray jarr = *((jcharArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jchar* buf = (jchar*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetCharArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
 	void BpWrapper::callSetShortArrayRegion() {
 		jshortArray jarr = *((jshortArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+		ARRAYREGION_EXTRACT();
 		const jshort* buf = (jshort*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
 		//ALOGD("buf[0]=%08x, buf[1]=%08x, buf[2]=%08x", buf[0], buf[1], buf[2]);
 		//ALOGD("calling SetShortArrayRegion(jarr=%08x, start=%08x, len=%08x, buf=%08x",
 		//	jarr, start, len, buf);
 		jniEnv->SetShortArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetIntArrayRegion() {
+		jintArray jarr = *((jintArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jint* buf = (jint*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetIntArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetFloatArrayRegion() {
+		jfloatArray jarr = *((jfloatArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jfloat* buf = (jfloat*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetFloatArrayRegion(jarr, start, len, buf);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
@@ -1005,6 +1048,17 @@ namespace android{
 		jbyte* buf = (jbyte*)malloc(len*sizeof(jbyte));
 		jniEnv->GetByteArrayRegion(jarr, start, len, buf);
 		size = len*sizeof(jbyte);
+		taintsize = 0;
+		callbackdata = buf;
+	}
+
+	void BpWrapper::callGetDoubleArrayRegion() {
+		jdoubleArray jarr = *((jdoubleArray*)(replydata));
+		jsize start = *((jsize*)(replydata+sizeof(jarr)));
+		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+		jdouble* buf = (jdouble*)malloc(len*sizeof(jdouble));
+		jniEnv->GetDoubleArrayRegion(jarr, start, len, buf);
+		size = len*sizeof(jdouble);
 		taintsize = 0;
 		callbackdata = buf;
 	}
@@ -1179,17 +1233,45 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+#define GENERIC_GETARRAYELEMENTS() \
+		taintsize = 0;\
+		callbackdata = malloc(size + sizeof(size) + sizeof(result));\
+		memcpy(callbackdata, &size, sizeof(size));\
+		memcpy(callbackdata+sizeof(size), &result, sizeof(result));\
+		memcpy(callbackdata+sizeof(size)+sizeof(result), result, size);
+
 	void BpWrapper::callGetByteArrayElements() {
 		jbyteArray jarr = *((jbyteArray*)replydata);
 		jboolean fake = 0;
 		void* result = jniEnv->GetByteArrayElements(jarr, &fake);
 		ALOGD("dalvik void pointer: %08x", (int)result);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jbyte);
-		taintsize = 0;
-		callbackdata = malloc(size + sizeof(size) + sizeof(result));
-		memcpy(callbackdata, &size, sizeof(size));
-		memcpy(callbackdata+sizeof(size), &result, sizeof(result));
-		memcpy(callbackdata+sizeof(size)+sizeof(result), result, size);
+		GENERIC_GETARRAYELEMENTS();
+	}
+
+	void BpWrapper::callGetShortArrayElements() {
+		jshortArray jarr = *((jshortArray*)replydata);
+		jboolean fake = 0;
+		void* result = jniEnv->GetShortArrayElements(jarr, &fake);
+		ALOGD("dalvik void pointer: %08x", (int)result);
+		size = jniEnv->GetArrayLength(jarr)*sizeof(jshort);
+		GENERIC_GETARRAYELEMENTS();
+	}
+
+	void BpWrapper::callGetLongArrayElements() {
+		jlongArray jarr = *((jlongArray*)replydata);
+		jboolean fake = 0;
+		void* result = jniEnv->GetLongArrayElements(jarr, &fake);
+		size = jniEnv->GetArrayLength(jarr)*sizeof(jlong);
+		GENERIC_GETARRAYELEMENTS();
+	}
+
+	void BpWrapper::callGetDoubleArrayElements() {
+		jdoubleArray jarr = *((jdoubleArray*)replydata);
+		jboolean fake = 0;
+		void* result = jniEnv->GetDoubleArrayElements(jarr, &fake);
+		size = jniEnv->GetArrayLength(jarr)*sizeof(jdouble);
+		GENERIC_GETARRAYELEMENTS();
 	}
 
 	//with taint support
@@ -1275,6 +1357,143 @@ namespace android{
 		callbackdata = malloc(size);
 		memcpy(callbackdata, &result, sizeof(result));
 		memcpy((callbackdata+sizeof(result)), &resultTaint, taintsize);
+	}
+
+	void BpWrapper::callReleaseBooleanArrayElements() {
+		jbooleanArray jarr = *((jbooleanArray*)replydata);
+		jniEnv->ReleaseBooleanArrayElements(jarr, 0, 0);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callReleaseByteArrayElements() {
+		jbyteArray jarr = *((jbyteArray*)replydata);
+		jniEnv->ReleaseByteArrayElements(jarr, 0, 0);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callReleaseCharArrayElements() {
+		jcharArray jarr = *((jcharArray*)replydata);
+		jniEnv->ReleaseCharArrayElements(jarr, 0, 0);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callReleaseShortArrayElements() {
+		jshortArray jarr = *((jshortArray*)replydata);
+		jniEnv->ReleaseShortArrayElements(jarr, 0, 0);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callReleaseIntArrayElements() {
+		jintArray jarr = *((jintArray*)replydata);
+		jniEnv->ReleaseIntArrayElements(jarr, 0, 0);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callReleaseLongArrayElements() {
+		jlongArray jarr = *((jlongArray*)replydata);
+		jniEnv->ReleaseLongArrayElements(jarr, 0, 0);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callReleaseFloatArrayElements() {
+		jfloatArray jarr = *((jfloatArray*)replydata);
+		jniEnv->ReleaseFloatArrayElements(jarr, 0, 0);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callReleaseDoubleArrayElements() {
+		jdoubleArray jarr = *((jdoubleArray*)replydata);
+		jniEnv->ReleaseDoubleArrayElements(jarr, 0, 0);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callNewWeakGlobalRef() {
+		jobject jobj = *((jobject*)replydata);
+		jweak result = jniEnv->NewWeakGlobalRef(jobj);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, sizeof(result));
+	}
+
+	void BpWrapper::callNewBooleanArray() {
+		jsize length = *((jsize*)replydata);
+		jbooleanArray result = jniEnv->NewBooleanArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewByteArray() {
+		jsize length = *((jsize*)replydata);
+		jbyteArray result = jniEnv->NewByteArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewCharArray() {
+		jsize length = *((jsize*)replydata);
+		jcharArray result = jniEnv->NewCharArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewShortArray() {
+		jsize length = *((jsize*)replydata);
+		jshortArray result = jniEnv->NewShortArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewIntArray() {
+		jsize length = *((jsize*)replydata);
+		jintArray result = jniEnv->NewIntArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewLongArray() {
+		jsize length = *((jsize*)replydata);
+		jlongArray result = jniEnv->NewLongArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewFloatArray() {
+		jsize length = *((jsize*)replydata);
+		jfloatArray result = jniEnv->NewFloatArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewDoubleArray() {
+		jsize length = *((jsize*)replydata);
+		jdoubleArray result = jniEnv->NewDoubleArray(length);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
 	}
 
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
@@ -1382,7 +1601,32 @@ namespace android{
 			case 89: callCallStaticIntMethodA(); break;			
 			case 90: callCallStaticLongMethodA(); break;			
 			case 91: callCallStaticFloatMethodA(); break;			
-			case 92: callCallStaticDoubleMethodA(); break;			
+			case 92: callCallStaticDoubleMethodA(); break;
+			case 93: callSetFloatArrayRegion(); break;
+			case 94: callSetByteArrayRegion(); break;
+			case 95: callSetCharArrayRegion(); break;
+			case 96: callSetIntArrayRegion(); break;
+			case 97: callGetLongArrayElements(); break;
+			case 98: callGetDoubleArrayElements(); break;
+			case 99: callGetShortArrayElements(); break;
+			case 100: callGetDoubleArrayRegion(); break;
+			case 101: callReleaseByteArrayElements(); break;
+			case 102: callReleaseBooleanArrayElements(); break;
+			case 103: callReleaseCharArrayElements(); break;
+			case 104: callReleaseShortArrayElements(); break;
+			case 105: callReleaseIntArrayElements(); break;
+			case 106: callReleaseLongArrayElements(); break;
+			case 107: callReleaseFloatArrayElements(); break;
+			case 108: callReleaseDoubleArrayElements(); break;
+			case 109: callNewWeakGlobalRef(); break;
+			case 110: callNewBooleanArray(); break;
+			case 111: callNewByteArray(); break;
+			case 112: callNewCharArray(); break;
+			case 113: callNewShortArray(); break;
+			case 114: callNewIntArray(); break;
+			case 115: callNewLongArray(); break;
+			case 116: callNewFloatArray(); break;
+			case 117: callNewDoubleArray(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);
