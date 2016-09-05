@@ -3377,29 +3377,8 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     // them with NULL
     NULL, // GetArrayType
 
-    NULL, // NewTaintedStringUTF,
-	NULL, // GetTaintedStringUTFChars,
-
-	NULL, // GetObjectTaintedField,
-	NULL, // GetBooleanTaintedField,
-	NULL, // GetByteTaintedField,
-	NULL, // GetCharTaintedField,
-	NULL, // GetShortTaintedField,
-	NULL, // GetIntTaintedField,
-	NULL, // GetLongTaintedField,
-	NULL, // GetFloatTaintedField,
-	NULL, // GetDoubleTaintedField,
-
-	NULL, // SetObjectTaintedField,
-	NULL, // SetBooleanTaintedField,
-	NULL, // SetByteTaintedField,
-	NULL, // SetCharTaintedField,
-	NULL, // SetShortTaintedField,
-	NULL, // SetIntTaintedField,
-	NULL, // SetLongTaintedField,
-	NULL, // SetFloatTaintedField,
-	NULL, // SetDoubleTaintedField,
-
+    NULL, // NewTaintedObjectA,
+    
 	NULL, // CallObjectTaintedMethodA,
 	NULL, // CallBooleanTaintedMethodA,
 	NULL, // CallByteTaintedMethodA,
@@ -3421,6 +3400,26 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
 	NULL, // CallNonvirtualFloatTaintedMethodA,
 	NULL, // CallNonvirtualDoubleTaintedMethodA,
 	NULL, // CallNonvirtualVoidTaintedMethodA,
+
+    NULL, // GetObjectTaintedField,
+	NULL, // GetBooleanTaintedField,
+	NULL, // GetByteTaintedField,
+	NULL, // GetCharTaintedField,
+	NULL, // GetShortTaintedField,
+	NULL, // GetIntTaintedField,
+	NULL, // GetLongTaintedField,
+	NULL, // GetFloatTaintedField,
+	NULL, // GetDoubleTaintedField,
+
+	NULL, // SetObjectTaintedField,
+	NULL, // SetBooleanTaintedField,
+	NULL, // SetByteTaintedField,
+	NULL, // SetCharTaintedField,
+	NULL, // SetShortTaintedField,
+	NULL, // SetIntTaintedField,
+	NULL, // SetLongTaintedField,
+	NULL, // SetFloatTaintedField,
+	NULL, // SetDoubleTaintedField,
 
 	NULL, // CallStaticObjectTaintedMethodA,
 	NULL, // CallStaticBooleanTaintedMethodA,
@@ -3451,7 +3450,11 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
 	NULL, // SetStaticIntTaintedField,
 	NULL, // SetStaticLongTaintedField,
 	NULL, // SetStaticFloatTaintedField,
-	NULL  // SetStaticDoubleTaintedField
+	NULL, // SetStaticDoubleTaintedField
+    
+    NULL, // NewTaintedStringUTF,
+	NULL  // GetTaintedStringUTFChars,
+
 };
 
 JNIEnvMod* dvmCreateJNIEnvMod() {
