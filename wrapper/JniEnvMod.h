@@ -521,7 +521,9 @@ struct JNINativeInterfaceMod {
     void        (*SetStaticFloatTaintedField)(JNIEnvMod*, jclass, jfieldID, jfloat, u4);
     void        (*SetStaticDoubleTaintedField)(JNIEnvMod*, jclass, jfieldID, jdouble, u4);
 
+    jsize       (*GetTaintedStringLength)(JNIEnvMod*, jstring, u4*);
     const jchar* (*GetTaintedStringChars)(JNIEnvMod*, jstring, jboolean*, u4*);
+    void        (*ReleaseTaintedStringChars)(JNIEnvMod*, jstring, u4, const jchar*);
 
     jstring     (*NewTaintedStringUTF)(JNIEnvMod*, const char*, u4);
     const char* (*GetTaintedStringUTFChars)(JNIEnvMod*, jstring, jboolean*, u4*);
@@ -975,6 +977,9 @@ struct _JNIEnvMod {
     jsize GetStringLength(jstring string)
     { return functions->GetStringLength(this, string); }
 
+    jsize GetTaintedStringLength(jstring string, u4* taint)
+    { return functions->GetTaintedStringLength(this, string, taint); }
+
     const jchar* GetStringChars(jstring string, jboolean* isCopy)
     { return functions->GetStringChars(this, string, isCopy); }
 
@@ -983,6 +988,9 @@ struct _JNIEnvMod {
 
     void ReleaseStringChars(jstring string, const jchar* chars)
     { functions->ReleaseStringChars(this, string, chars); }
+
+    void ReleaseTaintedStringChars(jstring string, u4 taint, const jchar* chars)
+    { functions->ReleaseTaintedStringChars(this, string, taint, chars); }
 
     jstring NewStringUTF(const char* bytes)
     { return functions->NewStringUTF(this, bytes); }
