@@ -2370,9 +2370,74 @@ static jmethodID GetStaticMethodID(JNIEnvMod* env, jclass jclazz, const char* na
 
 #define SETSTATIC_COPYDATA() \
 	void* data = malloc(size); \
-	memcpy(data, &jc, sizeof(jc)); \
-	memcpy(data+sizeof(jc), &fieldID, sizeof(fieldID)); \
-	memcpy(data+sizeof(jc)+sizeof(fieldID), &val, sizeof(val));
+	memcpy(data, &val, sizeof(val)); \
+	memcpy(data+sizeof(val), &jc, sizeof(jc)); \
+	memcpy(data+sizeof(val)+sizeof(jc), &fieldID, sizeof(fieldID)); 
+
+//code 133
+static void SetStaticBooleanField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jboolean val) {
+	ALOGD("jniEnvMod->SetStaticBooleanField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jboolean);
+	SETSTATIC_COPYDATA();
+    em->jniCall.function = 133;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 8;
+    em->reqJniCall();
+}
+
+//code 132
+static void SetStaticByteField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jbyte val) {
+	ALOGD("jniEnvMod->SetStaticByteField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jbyte);
+	SETSTATIC_COPYDATA();
+    em->jniCall.function = 132;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 8;
+    em->reqJniCall();
+}
+
+//code 131
+static void SetStaticCharField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jchar val) {
+	ALOGD("jniEnvMod->SetStaticCharField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jchar);
+	SETSTATIC_COPYDATA();
+    em->jniCall.function = 131;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 8;
+    em->reqJniCall();
+}
+
+//code 130
+static void SetStaticShortField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jshort val) {
+	ALOGD("jniEnvMod->SetStaticShortField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jshort);
+	SETSTATIC_COPYDATA();
+    em->jniCall.function = 130;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 8;
+    em->reqJniCall();
+}
+
+//code 129
+static void SetStaticIntField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jint val) {
+	ALOGD("jniEnvMod->SetStaticIntField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jint);
+	SETSTATIC_COPYDATA();
+    em->jniCall.function = 129;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 8;
+    em->reqJniCall();
+}
 
 //code 60
 static void SetStaticLongField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jlong val) {
@@ -2381,6 +2446,19 @@ static void SetStaticLongField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jlon
 	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jlong);
 	SETSTATIC_COPYDATA();
     em->jniCall.function = 60;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 8;
+    em->reqJniCall();
+}
+
+//code 128
+static void SetStaticFloatField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jfloat val) {
+	ALOGD("jniEnvMod->SetStaticFloatField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jfloat);
+	SETSTATIC_COPYDATA();
+    em->jniCall.function = 128;
     em->jniCall.length = size;
     em->jniCall.param_data = data;
     em->jniCall.taintsize = 0;

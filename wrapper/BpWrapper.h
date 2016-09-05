@@ -70,7 +70,13 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callReleaseStringCritical();
 	void callFromReflectedField();
 	void callNewObjectA();
+	void callSetStaticBooleanField();
+	void callSetStaticByteField();
+	void callSetStaticCharField();
+	void callSetStaticShortField();
+	void callSetStaticIntField();
 	void callSetStaticLongField();
+	void callSetStaticFloatField();
 	void callSetStaticDoubleField();
 	void callToReflectedMethod();
 	void callToReflectedField();

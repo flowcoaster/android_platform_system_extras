@@ -332,6 +332,7 @@ namespace android{
 		ALOGD("GetDoubleField()->%f", result);
 	}
 
+	//with taint support
 	void BpWrapper::callSetObjectField() {
 		jobject jobj = *((jobject*)replydata);
 		void* r2 = replydata+sizeof(jobj);
@@ -458,22 +459,92 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+#define SETSTATIC_GETDATA() \
+	void* r2 = replydata+sizeof(val); \
+	jclass jc = *((jclass*)replydata); \
+	r2 += sizeof(jc); \
+	jfieldID fieldID = *((jfieldID*)r2); \
+	r2 += sizeof(fieldID); \
+	u4 taint = *((u4*)r2);
+
+	void BpWrapper::callSetStaticBooleanField() {
+		jboolean val = *((jboolean*)replydata);
+		SETSTATIC_GETDATA();
+		ALOGD("SetStaticBooleanTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
+		jniEnv->SetStaticBooleanField(jc, fieldID, val);
+		//jniEnv->SetStaticBooleanTaintedField(jc, fieldID, val, taint);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetStaticByteField() {
+		jbyte val = *((jbyte*)replydata);
+		SETSTATIC_GETDATA();
+		ALOGD("SetStaticByteTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
+		jniEnv->SetStaticByteField(jc, fieldID, val);
+		//jniEnv->SetStaticByteTaintedField(jc, fieldID, val, taint);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetStaticCharField() {
+		jchar val = *((jchar*)replydata);
+		SETSTATIC_GETDATA();
+		ALOGD("SetStaticCharTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
+		jniEnv->SetStaticCharField(jc, fieldID, val);
+		//jniEnv->SetStaticCharTaintedField(jc, fieldID, val, taint);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetStaticShortField() {
+		jshort val = *((jshort*)replydata);
+		SETSTATIC_GETDATA();
+		ALOGD("SetStaticShortTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
+		jniEnv->SetStaticShortField(jc, fieldID, val);
+		//jniEnv->SetStaticShortTaintedField(jc, fieldID, val, taint);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetStaticIntField() {
+		jint val = *((jint*)replydata);
+		SETSTATIC_GETDATA();
+		ALOGD("SetStaticIntTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
+		jniEnv->SetStaticIntField(jc, fieldID, val);
+		//jniEnv->SetStaticIntTaintedField(jc, fieldID, val, taint);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
 	void BpWrapper::callSetStaticLongField() {
-		jclass jc = *((jclass*)replydata);
-		void* r2 = replydata+sizeof(jc);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jlong value = *((jlong*)r2);
-		//r2 += sizeof(value);
-		//u4 taint = *((u4*)r2);
-		ALOGD("SetStaticLongTaintedField: Field %08x to %08x", (int)fieldID, (int)value);
-		jniEnv->SetStaticLongField(jc, fieldID, value);
-		size = 0;
+		jlong val = *((jlong*)replydata);
+		SETSTATIC_GETDATA();
+		ALOGD("SetStaticLongTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
+		jniEnv->SetStaticLongField(jc, fieldID, val);
+		//jniEnv->SetStaticLongTaintedField(jc, fieldID, val, taint);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetStaticFloatField() {
+		jfloat val = *((jfloat*)replydata);
+		SETSTATIC_GETDATA();
+		ALOGD("SetStaticFloatTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
+		jniEnv->SetStaticFloatField(jc, fieldID, val);
+		//jniEnv->SetStaticFloatTaintedField(jc, fieldID, val, taint);
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
 	void BpWrapper::callSetStaticDoubleField() {
-
+		jdouble val = *((jdouble*)replydata);
+		SETSTATIC_GETDATA();
+		ALOGD("SetStaticDoubleTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
+		jniEnv->SetStaticDoubleField(jc, fieldID, val);
+		//jniEnv->SetStaticDoubleTaintedField(jc, fieldID, val, taint);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
 	}
 
 	void BpWrapper::callGetObjectClass() {
@@ -1722,6 +1793,12 @@ namespace android{
 			case 125: callPushLocalFrame(); break;
 			case 126: callPopLocalFrame(); break;
 			case 127: callSetStaticDoubleField(); break;
+			case 128: callSetStaticFloatField(); break;
+			case 129: callSetStaticIntField(); break;
+			case 130: callSetStaticShortField(); break;
+			case 131: callSetStaticCharField(); break;
+			case 132: callSetStaticByteField(); break;
+			case 133: callSetStaticBooleanField(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);
