@@ -950,6 +950,25 @@ struct _JNIEnvMod {
     void SetStaticDoubleField(jclass clazz, jfieldID fieldID, jdouble value)
     { functions->SetStaticDoubleField(this, clazz, fieldID, value); }
 
+    void SetStaticObjectTaintedField(jclass clazz, jfieldID fieldID, jobject value, u4 taint)
+    { functions->SetStaticObjectTaintedField(this, clazz, fieldID, value, taint); }
+    void SetStaticBooleanTaintedField(jclass clazz, jfieldID fieldID, jboolean value, u4 taint)
+    { functions->SetStaticBooleanTaintedField(this, clazz, fieldID, value, taint); }
+    void SetStaticByteTaintedField(jclass clazz, jfieldID fieldID, jbyte value, u4 taint)
+    { functions->SetStaticByteTaintedField(this, clazz, fieldID, value, taint); }
+    void SetStaticCharTaintedField(jclass clazz, jfieldID fieldID, jchar value, u4 taint)
+    { functions->SetStaticCharTaintedField(this, clazz, fieldID, value, taint); }
+    void SetStaticShortTaintedField(jclass clazz, jfieldID fieldID, jshort value, u4 taint)
+    { functions->SetStaticShortTaintedField(this, clazz, fieldID, value, taint); }
+    void SetStaticIntTaintedField(jclass clazz, jfieldID fieldID, jint value, u4 taint)
+    { functions->SetStaticIntTaintedField(this, clazz, fieldID, value, taint); }
+    void SetStaticLongTaintedField(jclass clazz, jfieldID fieldID, jlong value, u4 taint)
+    { functions->SetStaticLongTaintedField(this, clazz, fieldID, value, taint); }
+    void SetStaticFloatTaintedField(jclass clazz, jfieldID fieldID, jfloat value, u4 taint)
+    { functions->SetStaticFloatTaintedField(this, clazz, fieldID, value, taint); }
+    void SetStaticDoubleTaintedField(jclass clazz, jfieldID fieldID, jdouble value, u4 taint)
+    { functions->SetStaticDoubleTaintedField(this, clazz, fieldID, value, taint); }
+
     jstring NewString(const jchar* unicodeChars, jsize len)
     { return functions->NewString(this, unicodeChars, len); }
 

@@ -471,8 +471,8 @@ namespace android{
 		jboolean val = *((jboolean*)replydata);
 		SETSTATIC_GETDATA();
 		ALOGD("SetStaticBooleanTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
-		jniEnv->SetStaticBooleanField(jc, fieldID, val);
-		//jniEnv->SetStaticBooleanTaintedField(jc, fieldID, val, taint);
+		//jniEnv->SetStaticBooleanField(jc, fieldID, val);
+		jniEnv->SetStaticBooleanTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -481,8 +481,8 @@ namespace android{
 		jbyte val = *((jbyte*)replydata);
 		SETSTATIC_GETDATA();
 		ALOGD("SetStaticByteTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
-		jniEnv->SetStaticByteField(jc, fieldID, val);
-		//jniEnv->SetStaticByteTaintedField(jc, fieldID, val, taint);
+		//jniEnv->SetStaticByteField(jc, fieldID, val);
+		jniEnv->SetStaticByteTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -491,8 +491,8 @@ namespace android{
 		jchar val = *((jchar*)replydata);
 		SETSTATIC_GETDATA();
 		ALOGD("SetStaticCharTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
-		jniEnv->SetStaticCharField(jc, fieldID, val);
-		//jniEnv->SetStaticCharTaintedField(jc, fieldID, val, taint);
+		//jniEnv->SetStaticCharField(jc, fieldID, val);
+		jniEnv->SetStaticCharTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -501,8 +501,8 @@ namespace android{
 		jshort val = *((jshort*)replydata);
 		SETSTATIC_GETDATA();
 		ALOGD("SetStaticShortTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
-		jniEnv->SetStaticShortField(jc, fieldID, val);
-		//jniEnv->SetStaticShortTaintedField(jc, fieldID, val, taint);
+		//jniEnv->SetStaticShortField(jc, fieldID, val);
+		jniEnv->SetStaticShortTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -511,8 +511,8 @@ namespace android{
 		jint val = *((jint*)replydata);
 		SETSTATIC_GETDATA();
 		ALOGD("SetStaticIntTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
-		jniEnv->SetStaticIntField(jc, fieldID, val);
-		//jniEnv->SetStaticIntTaintedField(jc, fieldID, val, taint);
+		//jniEnv->SetStaticIntField(jc, fieldID, val);
+		jniEnv->SetStaticIntTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -521,8 +521,8 @@ namespace android{
 		jlong val = *((jlong*)replydata);
 		SETSTATIC_GETDATA();
 		ALOGD("SetStaticLongTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
-		jniEnv->SetStaticLongField(jc, fieldID, val);
-		//jniEnv->SetStaticLongTaintedField(jc, fieldID, val, taint);
+		//jniEnv->SetStaticLongField(jc, fieldID, val);
+		jniEnv->SetStaticLongTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -531,8 +531,8 @@ namespace android{
 		jfloat val = *((jfloat*)replydata);
 		SETSTATIC_GETDATA();
 		ALOGD("SetStaticFloatTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
-		jniEnv->SetStaticFloatField(jc, fieldID, val);
-		//jniEnv->SetStaticFloatTaintedField(jc, fieldID, val, taint);
+		//jniEnv->SetStaticFloatField(jc, fieldID, val);
+		jniEnv->SetStaticFloatTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -541,8 +541,8 @@ namespace android{
 		jdouble val = *((jdouble*)replydata);
 		SETSTATIC_GETDATA();
 		ALOGD("SetStaticDoubleTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
-		jniEnv->SetStaticDoubleField(jc, fieldID, val);
-		//jniEnv->SetStaticDoubleTaintedField(jc, fieldID, val, taint);
+		//jniEnv->SetStaticDoubleField(jc, fieldID, val);
+		jniEnv->SetStaticDoubleTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
