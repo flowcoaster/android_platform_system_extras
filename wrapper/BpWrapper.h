@@ -71,6 +71,7 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callFromReflectedField();
 	void callNewObjectA();
 	void callSetStaticLongField();
+	void callSetStaticDoubleField();
 	void callToReflectedMethod();
 	void callToReflectedField();
 	void callFromReflectedMethod();
@@ -127,6 +128,15 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callNewLongArray();
 	void callNewFloatArray();
 	void callNewDoubleArray();
+	void callGetObjectRefType();
+	void callGetStringLength();
+	void callGetStringRegion();
+	void callGetStringUTFRegion();
+	void callNewObjectArray();
+	void callEnsureLocalCapacity();
+	void callUnregisterNatives();
+	void callPushLocalFrame();
+	void callPopLocalFrame();
 	int handleJNIRequest(JValTaint* res, Parcel* reply);
 	void* replydata;
 	void* replytaint;

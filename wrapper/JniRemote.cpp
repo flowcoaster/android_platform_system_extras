@@ -88,6 +88,7 @@ static jobject ToReflectedMethod(JNIEnvMod* env, jclass jcls, jmethodID methodID
 	return result;
 }
 
+//code 63
 static jobject ToReflectedField(JNIEnvMod* env, jclass jcls, jfieldID fieldID, jboolean isStatic) {
 	ALOGD("jniEnvMod->ToReflectedField(env=%08x, jclass=%08x, fieldID=%08x)",
 		(int)env, (int)jcls, (int)fieldID);
@@ -96,7 +97,7 @@ static jobject ToReflectedField(JNIEnvMod* env, jclass jcls, jfieldID fieldID, j
 	void* data = malloc(size);
 	memcpy(data, &jcls, sizeof(jcls));
 	memcpy(data+sizeof(jcls), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 61;
+    ext->execManager->jniCall.function = 63;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
@@ -207,6 +208,30 @@ static void ExceptionClear(JNIEnvMod* env) {
 	ALOGD("returning after ExceptionClear");
 }	
 
+//code 125
+static jint PushLocalFrame(JNIEnvMod* env, jint capacity) {
+	ALOGD("jniEnvMod->PushLocalFrame(env=%08x, capacity=%08x)", (int)env, capacity);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 125;
+	em->jniCall.length = sizeof(capacity);
+	em->jniCall.param_data = &capacity;
+	em->reqJniCall();
+	jint result = *(jint*)(em->jniCall.param_data);
+	return result;
+}
+
+//code 126
+static jobject PopLocalFrame(JNIEnvMod* env, jobject jresult) {
+	ALOGD("jniEnvMod->PopLocalFrame(env=%08x, jresult=%08x)", (int)env, (int)jresult);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 126;
+	em->jniCall.length = sizeof(jresult);
+	em->jniCall.param_data = &jresult;
+	em->reqJniCall();
+	jobject result = *(jobject*)(em->jniCall.param_data);
+	return result;
+}
+
 //code 21
 static jobject NewGlobalRef(JNIEnvMod* env, jobject jobj) {
 	ALOGD("jniEnvMod->NewGlobalRef(env=%08x, jobj=%08x)", (int)env, (int)jobj);
@@ -282,6 +307,17 @@ static jobject NewLocalRef(JNIEnvMod* env, jobject jobj) {
 	jobject result = (jobject)*(int*)(ext->execManager->jniCall.param_data);
 	free(data);
 	return result;
+}
+
+//code 123
+static jint EnsureLocalCapacity(JNIEnvMod* env, jint capacity) {
+	ALOGD("jniEnvMod->NewLocalRef(env=%08x, capacity=%d)", (int)env, capacity);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 123;
+	em->jniCall.length = sizeof(capacity);
+	em->jniCall.param_data = &capacity;
+	em->reqJniCall();
+	return *(jint*)(em->jniCall.param_data);
 }
 
 //code 7
@@ -2332,20 +2368,47 @@ static jmethodID GetStaticMethodID(JNIEnvMod* env, jclass jclazz, const char* na
 	return result;
 }
 
+#define SETSTATIC_COPYDATA() \
+	void* data = malloc(size); \
+	memcpy(data, &jc, sizeof(jc)); \
+	memcpy(data+sizeof(jc), &fieldID, sizeof(fieldID)); \
+	memcpy(data+sizeof(jc)+sizeof(fieldID), &val, sizeof(val));
+
 //code 60
 static void SetStaticLongField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jlong val) {
-	ALOGD("jniEnvMod->SetIntField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	ALOGD("jniEnvMod->SetStaticLongField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jlong);
-	void* data = malloc(size);
-	memcpy(data, &jc, sizeof(jc));
-	memcpy(data+sizeof(jc), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jc)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 60;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
+	SETSTATIC_COPYDATA();
+    em->jniCall.function = 60;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 0;
+    em->reqJniCall();
+}
+
+//code 127
+static void SetStaticDoubleField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jdouble val) {
+	ALOGD("jniEnvMod->SetStaticDoubleField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jdouble);
+	SETSTATIC_COPYDATA();
+    em->jniCall.function = 127;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 0;
+    em->reqJniCall();
+}
+
+//code 119
+static jsize GetStringLength(JNIEnvMod* env, jstring jstr) {
+	ALOGD("jniEnvMod->GetStringLength(env=%08x, jstr=%08x)", (int)env, (int)jstr);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 119;
+	em->jniCall.length = sizeof(jstr);
+	em->jniCall.param_data = &jstr;
+	em->reqJniCall();
+	return *(jsize*)(em->jniCall.param_data);
 }
 
 //code 55
@@ -2469,6 +2532,26 @@ static void ReleaseStringUTFChars(JNIEnvMod* env, jstring jstr, const char* utf)
 	ext->execManager->reqJniCall();
 	free(data);
 }
+
+//code 122
+static jobjectArray NewObjectArray(JNIEnvMod* env, jsize length, jclass jelementClass, jobject jinitialElement) {
+	ALOGD("jniEnvMod->NewObjectArray(env=%08x, length=%d, jelementClass=%08x, jinitialElement=%08x)",
+		(int)env, length, (int)jelementClass, (int)jinitialElement);
+	int size = sizeof(length) + sizeof(jelementClass) + sizeof(jinitialElement);
+	void* data = malloc(size);
+	memcpy(data, &length, sizeof(length));
+	memcpy(data+sizeof(length), &jelementClass, sizeof(jelementClass));
+	memcpy(data+sizeof(length)+sizeof(jelementClass), &jinitialElement, sizeof(jinitialElement));
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 122;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jobjectArray result = *(jobjectArray*)(em->jniCall.param_data);
+	free(data);
+	return result;
+}
+
 
 //code 110
 static jbooleanArray NewBooleanArray(JNIEnvMod* env, jsize length) {
@@ -2834,9 +2917,51 @@ static void SetFloatArrayRegion(JNIEnvMod* env, jfloatArray jarr, jsize start, j
 	free(data);
 }
 
-//code ?
+//code 124
+static jint UnregisterNatives(JNIEnvMod* env, jclass jclazz) {
+	ALOGD("UnregisterNatives(env=%08x, jclazz=%08x)", (int)env, (int)jclazz);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 124;
+	em->jniCall.length = sizeof(jclazz);
+	em->jniCall.param_data = &jclazz;
+	em->reqJniCall();
+	return *(jint*)(em->jniCall.param_data);
+}	
+
+//code 120
+static void GetStringRegion(JNIEnvMod* env, jstring jstr, jsize start, jsize len, jchar* buf) {
+	ALOGD("GetStringRegion(env=%08x, jstr=%08x, start=%d, len=%d, buf=%08x)",
+		(int)env, (int)jstr, (int)start, (int)len, (int)buf);
+	int size = sizeof(jstr) + sizeof(start) + sizeof(len);
+	void* data = malloc(size);
+	memcpy(data, &jstr, sizeof(jstr));
+	memcpy(data+sizeof(jstr), &start, sizeof(start));
+	memcpy(data+sizeof(jstr)+sizeof(len), &len, sizeof(len));
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 120;
+	em->jniCall.length = size;
+	em->jniCall.param_data = data;
+	em->reqJniCall();
+	memcpy(buf, em->jniCall.param_data, sizeof(jchar)*len);
+	free(data);
+}
+
+//code 121
 static void GetStringUTFRegion(JNIEnvMod* env, jstring jstr, jsize start, jsize len, char* buf) {
-	ALOGD("GetStringUTFRegion");
+	ALOGD("GetStringUTFRegion(env=%08x, jstr=%08x, start=%d, len=%d, buf=%08x)",
+		(int)env, (int)jstr, (int)start, (int)len, (int)buf);
+	int size = sizeof(jstr) + sizeof(start) + sizeof(len);
+	void* data = malloc(size);
+	memcpy(data, &jstr, sizeof(jstr));
+	memcpy(data+sizeof(jstr), &start, sizeof(start));
+	memcpy(data+sizeof(jstr)+sizeof(len), &len, sizeof(len));
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 120;
+	em->jniCall.length = size;
+	em->jniCall.param_data = data;
+	em->reqJniCall();
+	memcpy(buf, em->jniCall.param_data, 8*len); //UTF-chars are 8bit
+	free(data);
 }
 
 /*static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jshortArray jarr, jboolean* isCopy) {
@@ -2997,6 +3122,17 @@ static jboolean ExceptionCheck(JNIEnvMod* env) {
 	return result;
 }
 
+//code 118
+static jobjectRefType GetObjectRefType(JNIEnvMod* env, jobject jobj) {
+	ALOGD("jniEnvMod->GetObjectRefType(env=%08x, jobj=%08x)", (int)env, (int)jobj);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 118;
+    em->jniCall.length = sizeof(jobj);
+    em->jniCall.param_data = &jobj;
+    em->reqJniCall();
+	jobjectRefType result = *(jobjectRefType*)(em->jniCall.param_data);
+	return result;
+}
 
 //function table just like in dalvik/vm/Jni.cpp
 static const struct JNINativeInterfaceMod gNativeInterface = {
@@ -3019,14 +3155,14 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     ExceptionDescribe,
     ExceptionClear,
     NULL, //FatalError,
-    NULL, //PushLocalFrame,
-    NULL, //PopLocalFrame,
+    PushLocalFrame,
+    PopLocalFrame,
     NewGlobalRef,
     DeleteGlobalRef,
     DeleteLocalRef,
     IsSameObject,
     NewLocalRef,
-    NULL, //EnsureLocalCapacity,
+    EnsureLocalCapacity,
     AllocObject,
     NewObject,
     NewObjectV,
@@ -3164,7 +3300,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //SetStaticFloatField,
     NULL, //SetStaticDoubleField,
     NULL, //NewString,
-    NULL, //GetStringLength,
+    GetStringLength,
     GetStringChars,
     ReleaseStringChars,
     NewStringUTF, //2: NewStringUTF,
@@ -3172,7 +3308,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     GetStringUTFChars, //1:GetStringUTFChars,
     ReleaseStringUTFChars,
     NULL, //GetArrayLength,
-    NULL, //NewObjectArray,
+    NewObjectArray,
     NULL, //GetObjectArrayElement,
     NULL, //SetObjectArrayElement,
     NewBooleanArray,
@@ -3216,11 +3352,11 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     SetFloatArrayRegion,
     NULL, //SetDoubleArrayRegion,
     NULL, //RegisterNatives,
-    NULL, //UnregisterNatives,
+    UnregisterNatives,
     NULL, //MonitorEnter,
     NULL, //MonitorExit,
     NULL, //GetJavaVM,
-    NULL, //GetStringRegion,
+    GetStringRegion,
     GetStringUTFRegion,
     GetPrimitiveArrayCritical,
     ReleasePrimitiveArrayCritical,
@@ -3232,7 +3368,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //NewDirectByteBuffer,
     NULL, //GetDirectBufferAddress,
     NULL, //GetDirectBufferCapacity,
-    NULL, //GetObjectRefType
+    GetObjectRefType,
 
     // following fields are initializers for
     // the tainted JNI method calls

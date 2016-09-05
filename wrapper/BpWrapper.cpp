@@ -472,6 +472,10 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+	void BpWrapper::callSetStaticDoubleField() {
+
+	}
+
 	void BpWrapper::callGetObjectClass() {
 		jobject jobj = *((jobject*)replydata);
 		ALOGD("CallGetObjectClass read jobj=%08x", (int)jobj);
@@ -1496,6 +1500,87 @@ namespace android{
 		memcpy(callbackdata, &result, size);
 	}
 
+	void BpWrapper::callGetObjectRefType() {
+		jobject jobj = *((jobject*)replydata);
+		jobjectRefType result = jniEnv->GetObjectRefType(jobj);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callGetStringLength() {
+		jstring jstr = *((jstring*)replydata);
+		jsize result = jniEnv->GetStringLength(jstr);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callGetStringRegion() {
+		jstring jstr = *((jstring*)replydata);
+		jsize start = *((jsize*)(replydata+sizeof(jstr)));
+		jsize len = *((jsize*)(replydata+sizeof(jstr)+sizeof(start)));
+		callbackdata = malloc(len*sizeof(jchar));
+		jniEnv->GetStringRegion(jstr, start, len, (jchar*)callbackdata);
+	}
+
+	void BpWrapper::callGetStringUTFRegion() {
+		jstring jstr = *((jstring*)replydata);
+		jsize start = *((jsize*)(replydata+sizeof(jstr)));
+		jsize len = *((jsize*)(replydata+sizeof(jstr)+sizeof(start)));
+		callbackdata = malloc(len*8); // UTF chars are 8 bit
+		jniEnv->GetStringUTFRegion(jstr, start, len, (char*)callbackdata);
+	}
+
+	void BpWrapper::callNewObjectArray() {
+		jsize length = *((jsize*)replydata);
+		jclass jelementClass = *((jclass*)(replydata+sizeof(length)));
+		jobject jinitialElement = *((jclass*)(replydata+sizeof(length)+sizeof(jelementClass)));
+		jobjectArray result = jniEnv->NewObjectArray(length, jelementClass, jinitialElement);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callEnsureLocalCapacity() {
+		jint capacity = *(jint*)replydata;
+		jint result = jniEnv->EnsureLocalCapacity(capacity);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callUnregisterNatives() {
+		jclass jclazz = *((jclass*)replydata);
+		jint result = jniEnv->UnregisterNatives(jclazz);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callPushLocalFrame() {
+		jint capacity = *(jint*)replydata;
+		jint result = jniEnv->PushLocalFrame(capacity);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}		
+
+	void BpWrapper::callPopLocalFrame() {
+		jobject jresult = *((jobject*)replydata);
+		jobject result = jniEnv->PopLocalFrame(jresult);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
 	    int function, taintsize;
 	    reply->readInt32(&function);
@@ -1627,6 +1712,16 @@ namespace android{
 			case 115: callNewLongArray(); break;
 			case 116: callNewFloatArray(); break;
 			case 117: callNewDoubleArray(); break;
+			case 118: callGetObjectRefType(); break;
+			case 119: callGetStringLength(); break;
+			case 120: callGetStringRegion(); break;
+			case 121: callGetStringUTFRegion(); break;
+			case 122: callNewObjectArray(); break;
+			case 123: callEnsureLocalCapacity(); break;
+			case 124: callUnregisterNatives(); break;
+			case 125: callPushLocalFrame(); break;
+			case 126: callPopLocalFrame(); break;
+			case 127: callSetStaticDoubleField(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);
