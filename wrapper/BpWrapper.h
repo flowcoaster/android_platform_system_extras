@@ -155,7 +155,7 @@ class BpWrapper : public BpInterface<IWrapper> {
 	virtual int32_t call(char* library, char* method, Vector<void*> params, Vector<int> sizeofparam, Vector<int> taints);
 	virtual int32_t addLib(const char* pathName);
 	virtual int32_t addFunc(const char* funcName, int libRef);
-	virtual JValTaint* taintCall(JNIEnvMod* pEnv, void* clazz, int argInfo, int argc, const uint32_t* taints,
+	virtual JValTaint* taintCall(JNIEnvMod* pEnv, jclass clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName);
 	virtual int callback(int function, int length, void* data, int taintlength, JValTaint* res);
 

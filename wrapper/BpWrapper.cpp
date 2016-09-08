@@ -1864,7 +1864,7 @@ namespace android{
 	    return reply.readInt32();
 	}
 
-	JValTaint* BpWrapper::taintCall(JNIEnvMod* pEnv, void* clazz, int argInfo, int argc, const uint32_t* taints,
+	JValTaint* BpWrapper::taintCall(JNIEnvMod* pEnv, jclass clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) {
 	    ALOGD("BpWrapper::taintcall(clazz=%p, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s)", clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName);
 	    setJniEnv(pEnv);
@@ -1882,7 +1882,7 @@ namespace android{
 	    data.writeInt32(libHandle);
 	    //if (funcHandle != 0) data.write(funcHandle, 4); else data.writeInt32(0);
 	    data.writeInt32(funcHandle);
-	    if (clazz != 0) data.write(clazz, 4); else data.writeInt32(0);
+	    if (clazz != 0) data.write(&clazz, 4); else data.writeInt32(0);
 	    data.writeInt32(argInfo);
 	    //ALOGD("about to transact");
             remote()->transact(TAINT_CALL, data, replyPtr);    // asynchronous call

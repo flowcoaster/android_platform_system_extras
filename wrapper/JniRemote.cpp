@@ -2792,6 +2792,7 @@ static void ReleaseBooleanArrayElements(JNIEnvMod* env, jbooleanArray jarr, jboo
 	ALOGD("jniEnvMod->ReleaseByteArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
 		(int)env, (int)jarr, (int)elems, mode);
 	if (mode == 1) return; // 1 = JNI_COMMIT
+	//TODO: copy out data?
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
     ext->execManager->jniCall.function = 102;
     ext->execManager->jniCall.length = sizeof(jarr);
@@ -2804,6 +2805,7 @@ static void ReleaseByteArrayElements(JNIEnvMod* env, jbyteArray jarr, jbyte* ele
 	ALOGD("jniEnvMod->ReleaseByteArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
 		(int)env, (int)jarr, (int)elems, mode);
 	if (mode == 1) return; // 1 = JNI_COMMIT
+	//TODO: copy out data?
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
     ext->execManager->jniCall.function = 101;
     ext->execManager->jniCall.length = sizeof(jarr);
@@ -2816,6 +2818,7 @@ static void ReleaseCharArrayElements(JNIEnvMod* env, jcharArray jarr, jchar* ele
 	ALOGD("jniEnvMod->ReleaseCharArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
 		(int)env, (int)jarr, (int)elems, mode);
 	if (mode == 1) return; // 1 = JNI_COMMIT
+	//TODO: copy out data?
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
     ext->execManager->jniCall.function = 103;
     ext->execManager->jniCall.length = sizeof(jarr);
@@ -2828,6 +2831,7 @@ static void ReleaseShortArrayElements(JNIEnvMod* env, jshortArray jarr, jshort* 
 	ALOGD("jniEnvMod->ReleaseShortArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
 		(int)env, (int)jarr, (int)elems, mode);
 	if (mode == 1) return; // 1 = JNI_COMMIT
+	//TODO: copy out data?
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
     ext->execManager->jniCall.function = 104;
     ext->execManager->jniCall.length = sizeof(jarr);
@@ -2839,6 +2843,7 @@ static void ReleaseShortArrayElements(JNIEnvMod* env, jshortArray jarr, jshort* 
 static void ReleaseIntArrayElements(JNIEnvMod* env, jintArray jarr, jint* elems, jint mode) {
 	ALOGD("jniEnvMod->ReleaseIntArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
 		(int)env, (int)jarr, (int)elems, mode);
+	//TODO: copy out data?
 	if (mode == 1) return; // 1 = JNI_COMMIT
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
     ext->execManager->jniCall.function = 105;
@@ -2852,6 +2857,7 @@ static void ReleaseLongArrayElements(JNIEnvMod* env, jlongArray jarr, jlong* ele
 	ALOGD("jniEnvMod->ReleaseLongArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
 		(int)env, (int)jarr, (int)elems, mode);
 	if (mode == 1) return; // 1 = JNI_COMMIT
+	//TODO: copy out data?
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
     ext->execManager->jniCall.function = 106;
     ext->execManager->jniCall.length = sizeof(jarr);
@@ -2864,6 +2870,7 @@ static void ReleaseFloatArrayElements(JNIEnvMod* env, jfloatArray jarr, jfloat* 
 	ALOGD("jniEnvMod->ReleaseFloatArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
 		(int)env, (int)jarr, (int)elems, mode);
 	if (mode == 1) return; // 1 = JNI_COMMIT
+	//TODO: copy out data?
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
     ext->execManager->jniCall.function = 107;
     ext->execManager->jniCall.length = sizeof(jarr);
@@ -2876,6 +2883,7 @@ static void ReleaseDoubleArrayElements(JNIEnvMod* env, jdoubleArray jarr, jdoubl
 	ALOGD("jniEnvMod->ReleaseDoubleArrayElements(env=%08x, jarr=%08x, elems=%08x, mode=%08x)",
 		(int)env, (int)jarr, (int)elems, mode);
 	if (mode == 1) return; // 1 = JNI_COMMIT
+	//TODO: copy out data?
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
     ext->execManager->jniCall.function = 108;
     ext->execManager->jniCall.length = sizeof(jarr);
@@ -3080,8 +3088,8 @@ static void ReleasePrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, void* arr
 	if (mode == 1) return; 
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
 	arrayList_t* at = ext->execManager->getArrayLength(jarr);
-	ALOGD("address of length: %08x", &(at->length));
-	ALOGD("address of dalvikP: %08x", &(at->dalvikP));
+	ALOGD("address of length: %08x", (int)&(at->length));
+	ALOGD("address of dalvikP: %08x", (int)&(at->dalvikP));
 	ALOGD("dalvikP=%08x", at->dalvikP);
 	int size = sizeof(jarr) + sizeof(int) + at->length;
 	if (size<0) {
@@ -3369,14 +3377,14 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //GetStaticFloatField,
     NULL, //GetStaticDoubleField,
     NULL, //SetStaticObjectField,
-    NULL, //SetStaticBooleanField,
-    NULL, //SetStaticByteField,
-    NULL, //SetStaticCharField,
-    NULL, //SetStaticShortField,
-    NULL, //SetStaticIntField,
+    SetStaticBooleanField,
+    SetStaticByteField,
+    SetStaticCharField,
+    SetStaticShortField,
+    SetStaticIntField,
     SetStaticLongField,
-    NULL, //SetStaticFloatField,
-    NULL, //SetStaticDoubleField,
+    SetStaticFloatField,
+    SetStaticDoubleField,
     NULL, //NewString,
     GetStringLength,
     GetStringChars,

@@ -35,7 +35,7 @@ class IWrapper : public IInterface {
 	// loads library into wrapper
 	virtual int32_t addFunc(const char* funcName, int32_t libRef) = 0;
 	// calls function with taints, wraps around dvmPlatformInvoke
-	virtual JValTaint* taintCall(JNIEnvMod* pEnv, void* clazz, int argInfo, int argc, const uint32_t* taints,
+	virtual JValTaint* taintCall(JNIEnvMod* pEnv, jclass clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) = 0;
 	virtual int callback(int function, int length, void* data, int taintlength, JValTaint* res) = 0;
 

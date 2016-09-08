@@ -25,7 +25,7 @@ typedef _JavaVM JavaVM;
 namespace android {
 
 sp<IWrapper> getWrapperService(const char* name);
-extern "C" JValTaint* taintCallMethod(JNIEnvMod* pEnv, void* clazz, int argInfo, int argc, const uint32_t* taints,
+extern "C" JValTaint* taintCallMethod(JNIEnvMod* pEnv, jclass clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName);
 extern "C" int32_t addLib(const char* filename);
 extern "C" int32_t addFunc(const char* funcName, int32_t libRef);
