@@ -1795,6 +1795,25 @@ namespace android{
 		ALOGD("RegisterTaintedNatives->%08x", result);
 	}
 
+	void BpWrapper::callNewString() {
+		jsize len = *((jsize*)replydata);
+		jchar* unicodeChars = (jchar*)(replydata+sizeof(len));
+		jstring result = jniEnv->NewString(unicodeChars, len);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callGetArrayLength() {
+		jarray jarr = *(jarray*)replydata;
+		jsize result = jniEnv->GetArrayLength(jarr);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
 	    int function, taintsize;
 	    reply->readInt32(&function);
@@ -1955,6 +1974,8 @@ namespace android{
 			case 144: callGetStringUTFLength(); break;
 			case 145: callRegisterNatives(); break;
 			case 146: callSetStaticObjectField(); break;
+			case 147: callNewString(); break;
+			case 148: callGetArrayLength(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);

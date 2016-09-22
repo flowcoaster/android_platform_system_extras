@@ -2665,6 +2665,25 @@ static void SetStaticDoubleField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jd
     em->reqJniCall();
 }
 
+//code 147
+static jstring NewString(JNIEnvMod* env, const jchar* unicodeChars, jsize len) {
+	ALOGD("NewString(env=%08x, unicodeChars=%08x, len=%d)", (int)env, (int)unicodeChars, len);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jchar)*len + sizeof(len);
+	void* data = malloc(size);
+	jsize* i = (jsize*)data;
+	*i = len;
+	memcpy(data+sizeof(len), unicodeChars, sizeof(jchar)*len);
+    em->jniCall.function = 147;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 0;
+    em->reqJniCall();
+	jstring result = *(jstring*)(em->jniCall.param_data);
+	free(data);
+	return result;
+}
+
 //code 119
 static jsize GetStringLength(JNIEnvMod* env, jstring jstr) {
 	ALOGD("jniEnvMod->GetStringLength(env=%08x, jstr=%08x)", (int)env, (int)jstr);
@@ -2811,6 +2830,18 @@ static void ReleaseStringUTFChars(JNIEnvMod* env, jstring jstr, const char* utf)
 	ext->execManager->jniCall.length = size;
 	ext->execManager->reqJniCall();
 	free(data);
+}
+
+//code 148
+static jsize GetArrayLength(JNIEnvMod* env, jarray jarr) {
+	ALOGD("GetArrayLength(env=%08x, jarr=%08x)", (int)env, (int)jarr);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 148;
+    em->jniCall.length = sizeof(jarr);
+    em->jniCall.taintsize = 0;
+    em->jniCall.param_data = &jarr;
+    em->reqJniCall();
+	return *(jsize*)(em->jniCall.param_data);
 }
 
 //code 122
@@ -3631,7 +3662,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     SetStaticLongField,
     SetStaticFloatField,
     SetStaticDoubleField,
-    NULL, //NewString,
+    NewString,
     GetStringLength,
     GetStringChars,
     ReleaseStringChars,
@@ -3639,7 +3670,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     GetStringUTFLength,
     GetStringUTFChars,
     ReleaseStringUTFChars,
-    NULL, //GetArrayLength,
+    GetArrayLength,
     NewObjectArray,
     NULL, //GetObjectArrayElement,
     NULL, //SetObjectArrayElement,
