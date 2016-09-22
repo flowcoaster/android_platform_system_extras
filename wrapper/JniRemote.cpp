@@ -9,6 +9,45 @@
 
 namespace android {
 
+static jint AttachCurrentThread(JavaVM* vm, JNIEnvMod** p_env, void* thr_args) {
+    ALOGD("AttachCurrentThread()");
+	return 0;
+}
+
+static jint AttachCurrentThreadAsDaemon(JavaVM* vm, JNIEnvMod** p_env, void* thr_args) {
+	ALOGD("AttachCurrentThreadAsDaemon()");
+	return 0;
+}
+
+static jint DetachCurrentThread(JavaVM* vm) {
+	ALOGD("DetachCurrentThread()");
+	return 0;
+}
+
+static jint GetEnv(JavaVM* vm, void** env, jint version) {
+	ALOGD("GetEnv()");
+	return 0;
+}
+
+static jint DestroyJavaVM(JavaVM* vm) {
+	ALOGD("DestroyJavaVM()");
+	return 0;
+}
+
+static const struct JNIInvokeInterface gInvokeInterface = {
+    NULL,
+    NULL,
+    NULL,
+
+    DestroyJavaVM,
+    AttachCurrentThread,
+    DetachCurrentThread,
+
+    GetEnv,
+
+    AttachCurrentThreadAsDaemon,
+};
+
 //blueprint
 //ALOGD method call
 //get env pointer
@@ -2368,11 +2407,159 @@ static jmethodID GetStaticMethodID(JNIEnvMod* env, jclass jclazz, const char* na
 	return result;
 }
 
+//code 134
+static jfieldID GetStaticFieldID(JNIEnvMod* env, jclass jclazz, const char* name, const char* sig) {
+	ALOGD("jniEnvMod->GetStaticFieldID(env=%08x, jclazz=%08x, name=%s, sig=%s)",
+		(int)env, (int)jclazz, name, sig);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jclazz) + sizeof(char)*(strlen(name)+1) + sizeof(char)*(strlen(sig)+1);
+	void* data = malloc(size);
+	memcpy(data, &jclazz, sizeof(jclazz));
+	void* d2 = data+sizeof(jclazz);
+	memcpy(d2, name, sizeof(char)*(strlen(name)+1));
+	d2 += sizeof(char)*(strlen(name)+1);
+	memcpy(d2, sig, sizeof(char)*(strlen(sig)+1));
+    em->jniCall.function = 134;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jfieldID result = (jfieldID)*(int*)(em->jniCall.param_data);
+	return result;
+}
+
+#define GETSTATIC_COPYDATA() \
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager; \
+	int size = sizeof(jclazz) + sizeof(jfieldID); \
+	void* data = malloc(size); \
+	memcpy(data, &jclazz, sizeof(jclazz)); \
+	memcpy(data+sizeof(jclazz), &fieldID, sizeof(fieldID)); \
+	
+//code 135
+static jint GetStaticIntField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
+	ALOGD("jniEnvMod->GetStaticIntField(env=%08x, jclazz=%08x, jfieldID=%08x)",
+		(int)env, (int)jclazz, (int)fieldID);
+	GETSTATIC_COPYDATA();
+    em->jniCall.function = 135;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	return *(jint*)(em->jniCall.param_data);
+}
+
+//code 136
+static jshort GetStaticShortField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
+	ALOGD("jniEnvMod->GetStaticShortField(env=%08x, jclazz=%08x, jfieldID=%08x)",
+		(int)env, (int)jclazz, (int)fieldID);
+	GETSTATIC_COPYDATA();
+    em->jniCall.function = 136;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	return *(jshort*)(em->jniCall.param_data);
+}
+
+//code 137
+static jchar GetStaticCharField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
+	ALOGD("jniEnvMod->GetStaticCharField(env=%08x, jclazz=%08x, jfieldID=%08x)",
+		(int)env, (int)jclazz, (int)fieldID);
+	GETSTATIC_COPYDATA();
+    em->jniCall.function = 137;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	return *(jchar*)(em->jniCall.param_data);
+}
+
+//code 138
+static jbyte GetStaticByteField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
+	ALOGD("jniEnvMod->GetStaticByteField(env=%08x, jclazz=%08x, jfieldID=%08x)",
+		(int)env, (int)jclazz, (int)fieldID);
+	GETSTATIC_COPYDATA();
+    em->jniCall.function = 138;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	return *(jbyte*)(em->jniCall.param_data);
+}
+
+//code 139
+static jboolean GetStaticBooleanField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
+	ALOGD("jniEnvMod->GetStaticBooleanField(env=%08x, jclazz=%08x, jfieldID=%08x)",
+		(int)env, (int)jclazz, (int)fieldID);
+	GETSTATIC_COPYDATA();
+    em->jniCall.function = 139;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	return *(jboolean*)(em->jniCall.param_data);
+}
+
+//code 140
+static jobject GetStaticObjectField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
+	ALOGD("jniEnvMod->GetStaticObjectField(env=%08x, jclazz=%08x, jfieldID=%08x)",
+		(int)env, (int)jclazz, (int)fieldID);
+	GETSTATIC_COPYDATA();
+    em->jniCall.function = 140;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	return *(jobject*)(em->jniCall.param_data);
+}
+
+//code 141
+static jlong GetStaticLongField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
+	ALOGD("jniEnvMod->GetStaticLongField(env=%08x, jclazz=%08x, jfieldID=%08x)",
+		(int)env, (int)jclazz, (int)fieldID);
+	GETSTATIC_COPYDATA();
+    em->jniCall.function = 141;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	return *(jlong*)(em->jniCall.param_data);
+}
+
+//code 142
+static jfloat GetStaticFloatField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
+	ALOGD("jniEnvMod->GetStaticFloatField(env=%08x, jclazz=%08x, jfieldID=%08x)",
+		(int)env, (int)jclazz, (int)fieldID);
+	GETSTATIC_COPYDATA();
+    em->jniCall.function = 142;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	return *(jfloat*)(em->jniCall.param_data);
+}
+
+//code 143
+static jdouble GetStaticDoubleField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
+	ALOGD("jniEnvMod->GetStaticDoubleField(env=%08x, jclazz=%08x, jfieldID=%08x)",
+		(int)env, (int)jclazz, (int)fieldID);
+	GETSTATIC_COPYDATA();
+    em->jniCall.function = 143;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	return *(jdouble*)(em->jniCall.param_data);
+}
+
 #define SETSTATIC_COPYDATA() \
 	void* data = malloc(size); \
 	memcpy(data, &val, sizeof(val)); \
 	memcpy(data+sizeof(val), &jc, sizeof(jc)); \
 	memcpy(data+sizeof(val)+sizeof(jc), &fieldID, sizeof(fieldID)); 
+
+//code 146
+static void SetStaticObjectField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jobject val) {
+	ALOGD("jniEnvMod->SetStaticBooleanField(env=%08x, jclass=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jc, (int)fieldID, (int)val);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jc) + sizeof(fieldID) + sizeof(jobject);
+	SETSTATIC_COPYDATA();
+    em->jniCall.function = 133;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->jniCall.taintsize = 8;
+    em->reqJniCall();
+}
 
 //code 133
 static void SetStaticBooleanField(JNIEnvMod* env, jclass jc, jfieldID fieldID, jboolean val) {
@@ -2565,6 +2752,17 @@ static jstring NewStringUTF(JNIEnvMod* env, const char* bytes) {
     return strResult;
 }
 
+//code 
+static jsize GetStringUTFLength(JNIEnvMod* env, jstring jstr) {
+	ALOGD("jniEnvMod->GetStringUTFLength(env=%08x, jstr=%08x)", (int)env, (int)jstr);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 999;
+	em->jniCall.length = sizeof(jstr);
+	em->jniCall.param_data = &jstr;
+	em->reqJniCall();
+	return *(jsize*)(em->jniCall.param_data);
+}
+
 //code 1
 static const char* GetStringUTFChars(JNIEnvMod* env, jstring jstr, jboolean* isCopy) {
 	ALOGD("jniEnvMod->GetStringUTFChars(env=%08x, jstr=%08x, isCopy=%08x)",
@@ -2572,18 +2770,22 @@ static const char* GetStringUTFChars(JNIEnvMod* env, jstring jstr, jboolean* isC
 	JNIEnvModExt* ext = (JNIEnvModExt*)env;
 	ALOGD("JniEnv->execManager=%p with status %s",
 		ext->execManager, ExecutionManager::strStatus(ext->execManager->mStatus));
-	int size = sizeof(jstring)*sizeof(char), sizeb = sizeof(jboolean)*sizeof(char);
-	void* data = malloc(size+sizeb); // freed after reqJniCall()
+	int size = sizeof(jstring), sizeb = sizeof(jboolean)*sizeof(char);
+	//void* data = malloc(size+sizeb); // freed after reqJniCall()
+	void* data = malloc(size); // freed after reqJniCall()
 	memcpy(data, &jstr, size);
-	if (isCopy != NULL) memcpy(data+size, isCopy, sizeb);
-	else memset(data+size, 0, sizeb);
-	ALOGD("jstr=%p, iscopy=%d", jstr, *isCopy);
+	//if (isCopy != NULL) memcpy(data+size, isCopy, sizeb);
+	//else memset(data+size, 0, sizeb);
+	ALOGD("jstr=%p, iscopy=%d", jstr, isCopy);
 	ext->execManager->jniCall.function = 1;
 	ext->execManager->jniCall.param_data = data;
-	ext->execManager->jniCall.length = size+sizeb;
+    ext->execManager->jniCall.taintsize = 0;
+	ext->execManager->jniCall.length = size;
 	ext->execManager->reqJniCall();
 	free(data);
-	
+    if (isCopy != NULL) {
+        *isCopy = JNI_TRUE;
+    }
 	//ext->execManager->reqJniCall(42);
 	int dalvikP = *(int*)(ext->execManager->jniCall.param_data);
 	const char* d = (char*)(ext->execManager->jniCall.param_data+sizeof(char*));
@@ -2979,7 +3181,7 @@ static void SetShortArrayRegion(JNIEnvMod* env, jshortArray jarr, jsize start, j
 
 //code 96
 static void SetIntArrayRegion(JNIEnvMod* env, jintArray jarr, jsize start, jsize len, const jint* buf) {
-	ALOGD("jniEnvMod->SetIntArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+	ALOGD("SetIntArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
 		(int)env, (int)jarr, start, len, (int) buf);
 	ARRAYREGION_COPYOUT();
 	memcpy(d2, buf, len*sizeof(jint));
@@ -2992,7 +3194,7 @@ static void SetIntArrayRegion(JNIEnvMod* env, jintArray jarr, jsize start, jsize
 
 //code 93
 static void SetFloatArrayRegion(JNIEnvMod* env, jfloatArray jarr, jsize start, jsize len, const jfloat* buf) {
-	ALOGD("jniEnvMod->SetFloatArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+	ALOGD("SetFloatArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
 		(int)env, (int)jarr, start, len, (int) buf);
 	ARRAYREGION_COPYOUT();
 	memcpy(d2, buf, len*sizeof(jfloat));
@@ -3001,6 +3203,44 @@ static void SetFloatArrayRegion(JNIEnvMod* env, jfloatArray jarr, jsize start, j
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
 	free(data);
+}
+
+//code 145
+static jint RegisterNatives(JNIEnvMod* env, jclass jclazz, const JNINativeMethod* methods, jint nMethods) {
+	ALOGD("RegisterNatives(env=%08x, jclazz=%08x, methods=%08x, nMenthods=%08x)",
+		(int)env, (int)jclazz, (int)methods, nMethods);
+	int size = sizeof(jclazz) + sizeof(nMethods) + nMethods*(2*sizeof(int)+sizeof(void*));
+	for (int i=0; i<nMethods; i++)
+		size += (strlen(methods[i].name)+strlen(methods[i].signature)+2)*sizeof(char);
+	void* data = malloc(size);
+	memcpy(data, &jclazz, sizeof(jclazz));
+	memcpy(data+sizeof(jclazz), &nMethods, sizeof(nMethods));
+	void* d2 = data+sizeof(jclazz)+sizeof(nMethods);
+	for (int i=0; i<nMethods; i++) {
+		int j = strlen(methods[i].name)+1;
+		memcpy(d2, &j, sizeof(j));
+		d2 += sizeof(j);
+		memcpy(d2, methods[i].name, j*sizeof(char));
+		d2 += j*sizeof(char);
+		j = strlen(methods[i].signature)+1;
+		memcpy(d2, &j, sizeof(j));
+		d2 += sizeof(j);
+		memcpy(d2, methods[i].signature, j*sizeof(char));
+		d2 += j*sizeof(char);
+		int v = *(int*)(methods[i].fnPtr);
+		ALOGD("v=%08x", v);
+		memcpy(d2, &(methods[i].fnPtr), sizeof(void*));
+		d2 += sizeof(void*);
+		ALOGD("copied out %s (%s) @ %08x", methods[i].name, methods[i].signature, methods[i].fnPtr);
+	}
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 145;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jint result = *(jint*)em->jniCall.param_data;
+	free(data);
+	return result;
 }
 
 //code 124
@@ -3012,7 +3252,13 @@ static jint UnregisterNatives(JNIEnvMod* env, jclass jclazz) {
 	em->jniCall.param_data = &jclazz;
 	em->reqJniCall();
 	return *(jint*)(em->jniCall.param_data);
-}	
+}
+
+static jint GetJavaVM(JNIEnvMod* env, JavaVM** vm) {
+	ALOGD("GetJavaVM(env=%08x, vm=%08x)", (int)env, (int)vm);
+	*vm = (JavaVM*)&gInvokeInterface;
+    return (*vm == NULL) ? JNI_ERR : JNI_OK;
+}
 
 //code 120
 static void GetStringRegion(JNIEnvMod* env, jstring jstr, jsize start, jsize len, jchar* buf) {
@@ -3366,17 +3612,17 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     CallStaticVoidMethod,
     CallStaticVoidMethodV,
     CallStaticVoidMethodA,
-    NULL, //GetStaticFieldID,
-    NULL, //GetStaticObjectField,
-    NULL, //GetStaticBooleanField,
-    NULL, //GetStaticByteField,
-    NULL, //GetStaticCharField,
-    NULL, //GetStaticShortField,
-    NULL, //GetStaticIntField,
-    NULL, //GetStaticLongField,
-    NULL, //GetStaticFloatField,
-    NULL, //GetStaticDoubleField,
-    NULL, //SetStaticObjectField,
+    GetStaticFieldID,
+    GetStaticObjectField,
+    GetStaticBooleanField,
+    GetStaticByteField,
+    GetStaticCharField,
+    GetStaticShortField,
+    GetStaticIntField,
+    GetStaticLongField,
+    GetStaticFloatField,
+    GetStaticDoubleField,
+    SetStaticObjectField,
     SetStaticBooleanField,
     SetStaticByteField,
     SetStaticCharField,
@@ -3389,9 +3635,9 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     GetStringLength,
     GetStringChars,
     ReleaseStringChars,
-    NewStringUTF, //2: NewStringUTF,
-    NULL, //GetStringUTFLength,
-    GetStringUTFChars, //1:GetStringUTFChars,
+    NewStringUTF,
+    GetStringUTFLength,
+    GetStringUTFChars,
     ReleaseStringUTFChars,
     NULL, //GetArrayLength,
     NewObjectArray,
@@ -3437,11 +3683,11 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL, //SetLongArrayRegion,
     SetFloatArrayRegion,
     NULL, //SetDoubleArrayRegion,
-    NULL, //RegisterNatives,
+    RegisterNatives,
     UnregisterNatives,
     NULL, //MonitorEnter,
     NULL, //MonitorExit,
-    NULL, //GetJavaVM,
+    GetJavaVM, //TODO: full implementation
     GetStringRegion,
     GetStringUTFRegion,
     GetPrimitiveArrayCritical,
@@ -3550,6 +3796,12 @@ JNIEnvMod* dvmCreateJNIEnvMod() {
     //create Execution Manager
     newEnv->execManager = new ExecutionManager();
     return (JNIEnvMod*)newEnv;
+}
+
+JavaVM* wrCreateJavaVM() {
+	JavaVM* vm = (JavaVM*) malloc(sizeof(JavaVM));
+	vm->functions = &gInvokeInterface;
+	return vm;
 }
 
 }

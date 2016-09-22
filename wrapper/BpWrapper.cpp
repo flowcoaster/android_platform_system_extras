@@ -23,13 +23,14 @@ namespace android{
 
 	void BpWrapper::callGetStringUTFChars() {
 		jstring jstr = *((jstring*)replydata);
-		jboolean isCopy = *((jboolean*)(replydata+(sizeof(jstr)*sizeof(char))));
-		ALOGD("jstr=%p, isCopy=%d", jstr, isCopy);
-		const char* chars = jniEnv->GetStringUTFChars(jstr, &isCopy);
+		//jboolean isCopy = *((jboolean*)(replydata+(sizeof(jstr)*sizeof(char))));
+		//ALOGD("jstr=%p, isCopy=%d", jstr, isCopy);
+		ALOGD("jstr=%08x", (int)jstr);
+		const char* chars = jniEnv->GetStringUTFChars(jstr, 0);
 		ALOGD("GetStringUTFChars returns %s; sizeof(*chars)=%d; strlen(chars)=%d",
 			chars, sizeof(*chars), strlen(chars));
 		//size = sizeof(*chars)*strlen(chars)+1;
-		size = 8*strlen(chars)+1;
+		size = 8*(strlen(chars)+1);
 		taintsize = 0;
 		callbackdata = malloc(size+sizeof(char*)); //freed by CALLBACK
 		memcpy(callbackdata, &chars, sizeof(char*));
@@ -466,6 +467,15 @@ namespace android{
 	jfieldID fieldID = *((jfieldID*)r2); \
 	r2 += sizeof(fieldID); \
 	u4 taint = *((u4*)r2);
+
+	void BpWrapper::callSetStaticObjectField() {
+		jobject val = *((jobject*)replydata);
+		SETSTATIC_GETDATA();
+		ALOGD("SetStaticObjectTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
+		jniEnv->SetStaticObjectTaintedField(jc, fieldID, val, taint);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
 
 	void BpWrapper::callSetStaticBooleanField() {
 		jboolean val = *((jboolean*)replydata);
@@ -1652,6 +1662,139 @@ namespace android{
 		memcpy(callbackdata, &result, size);
 	}
 
+	void BpWrapper::callGetStaticFieldID() {
+		jclass jclazz = *((jclass*)replydata);
+		void* r2 = replydata+sizeof(jclazz);
+		char* name = (char*)(r2);
+		r2+= sizeof(char)*(strlen(name)+1);
+		char* sig = (char*)(r2);
+		jfieldID result = jniEnv->GetStaticFieldID(jclazz, name, sig);
+		size = sizeof(result);
+		taintsize = 0;
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+		ALOGD("GetStaticFieldID()->%08x", (int)result);
+	}
+
+#define UNPACK_GETSTATICFIELD() \
+		jclass jclazz = *((jclass*)replydata); \
+		void* r2 = replydata+sizeof(jclazz); \
+		jfieldID fieldID = *((jfieldID*)r2); \
+		u4 taint = 0; 
+
+#define WRITEOUT_GETSTATICFIELD() \
+		size = sizeof(result) + sizeof(taint); \
+		callbackdata = malloc(size); \
+		taintsize = sizeof(taint); \
+		memcpy(callbackdata, &result, sizeof(result)); \
+		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+
+	void BpWrapper::callGetStaticBooleanField() {
+		UNPACK_GETSTATICFIELD();
+		jboolean result = jniEnv->GetStaticBooleanTaintedField(jclazz, fieldID, &taint);
+		WRITEOUT_GETSTATICFIELD();
+		ALOGD("GetBooleanField()->%08x", (int)result);
+	}
+
+	void BpWrapper::callGetStaticByteField() {
+		UNPACK_GETSTATICFIELD();
+		jbyte result = jniEnv->GetStaticByteTaintedField(jclazz, fieldID, &taint);
+		WRITEOUT_GETSTATICFIELD();
+		ALOGD("GetByteField()->%08x", (int)result);
+	}
+
+	void BpWrapper::callGetStaticCharField() {
+		UNPACK_GETSTATICFIELD();
+		jchar result = jniEnv->GetStaticCharTaintedField(jclazz, fieldID, &taint);
+		WRITEOUT_GETSTATICFIELD();
+		ALOGD("GetCharField()->%08x", (int)result);
+	}
+
+	void BpWrapper::callGetStaticShortField() {
+		UNPACK_GETSTATICFIELD();
+		jshort result = jniEnv->GetStaticShortTaintedField(jclazz, fieldID, &taint);
+		WRITEOUT_GETSTATICFIELD();
+		ALOGD("GetShortField()->%08x", (int)result);
+	}
+
+	void BpWrapper::callGetStaticIntField() {
+		UNPACK_GETSTATICFIELD();
+		jint result = jniEnv->GetStaticIntTaintedField(jclazz, fieldID, &taint);
+		WRITEOUT_GETSTATICFIELD();
+		ALOGD("GetIntField()->%08x", (int)result);
+	}
+
+	void BpWrapper::callGetStaticLongField() {
+		UNPACK_GETSTATICFIELD();
+		jlong result = jniEnv->GetStaticLongTaintedField(jclazz, fieldID, &taint);
+		WRITEOUT_GETSTATICFIELD();
+		ALOGD("GetLongField()->%08x", (int)result);
+	}
+
+	void BpWrapper::callGetStaticFloatField() {
+		UNPACK_GETSTATICFIELD();
+		jfloat result = jniEnv->GetStaticFloatTaintedField(jclazz, fieldID, &taint);
+		WRITEOUT_GETSTATICFIELD();
+		ALOGD("GetFloatField()->%f", result);
+	}
+
+	void BpWrapper::callGetStaticDoubleField() {
+		UNPACK_GETSTATICFIELD();
+		jdouble result = jniEnv->GetStaticDoubleTaintedField(jclazz, fieldID, &taint);
+		WRITEOUT_GETSTATICFIELD();
+		ALOGD("GetDoubleField()->%f", result);
+	}
+
+	void BpWrapper::callGetStaticObjectField() {
+		UNPACK_GETSTATICFIELD();
+		jobject result = jniEnv->GetStaticObjectTaintedField(jclazz, fieldID, &taint);
+		WRITEOUT_GETSTATICFIELD();
+		ALOGD("GetObjectField()->%08x", (int)result);
+	}
+
+	void BpWrapper::callGetStringUTFLength() {
+		jstring jstr = *((jstring*)replydata);
+		jsize result = jniEnv->GetStringUTFLength(jstr);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callRegisterNatives() {
+		jclass jclazz = *((jclass*)replydata);
+		jint nMethods = *((jint*)(replydata+sizeof(jclazz)));
+		ALOGD("RegisterTaintedNatives: jclazz=%08x, nMethods=%08x", (int)jclazz, nMethods);
+		jint result = 0; //JNI_OK
+		JNINativeMethod* meth = (JNINativeMethod*)malloc(sizeof(JNINativeMethod));
+		void* r2 = replydata+sizeof(jclazz)+sizeof(nMethods);
+		for (int i=0; i<nMethods; i++) {
+			int j = *(int*)r2;
+			r2 += sizeof(j);
+			char* name = (char*)r2;
+			r2 += j*sizeof(char);
+			j = *(int*)r2;
+			r2 += sizeof(j);
+			char* signature = (char*)r2;
+			r2 += j*sizeof(char);
+			meth->name = name;
+			meth->signature = signature;
+			meth->fnPtr = r2;
+			int code = *(int*)r2;
+			r2 += sizeof(void*);
+			ALOGD("registering native method from library: %s (%s), code at %08x",
+				meth->name, meth->signature, meth->fnPtr);
+			ALOGD("code=%08x", code);
+			if(jniEnv->RegisterTaintedNatives(jclazz, meth, 1) == -1)
+				result = -1;
+		}
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+		ALOGD("RegisterTaintedNatives->%08x", result);
+	}
+
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
 	    int function, taintsize;
 	    reply->readInt32(&function);
@@ -1799,6 +1942,19 @@ namespace android{
 			case 131: callSetStaticCharField(); break;
 			case 132: callSetStaticByteField(); break;
 			case 133: callSetStaticBooleanField(); break;
+			case 134: callGetStaticFieldID(); break;
+			case 135: callGetStaticIntField(); break;
+			case 136: callGetStaticShortField(); break;
+			case 137: callGetStaticCharField(); break;
+			case 138: callGetStaticByteField(); break;
+			case 139: callGetStaticBooleanField(); break;
+			case 140: callGetStaticObjectField(); break;
+			case 141: callGetStaticLongField(); break;
+			case 142: callGetStaticFloatField(); break;
+			case 143: callGetStaticDoubleField(); break;
+			case 144: callGetStringUTFLength(); break;
+			case 145: callRegisterNatives(); break;
+			case 146: callSetStaticObjectField(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);
@@ -1864,7 +2020,7 @@ namespace android{
 	    return reply.readInt32();
 	}
 
-	JValTaint* BpWrapper::taintCall(JNIEnvMod* pEnv, jclass clazz, int argInfo, int argc, const uint32_t* taints,
+	JValTaint* BpWrapper::taintCall(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) {
 	    ALOGD("BpWrapper::taintcall(clazz=%p, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s)", clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName);
 	    setJniEnv(pEnv);

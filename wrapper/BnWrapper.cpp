@@ -12,6 +12,7 @@ BnWrapper::BnWrapper(int pid, int uid) {
     callerPid = pid;
     callerUid = uid;
     jniEnv = dvmCreateJNIEnvMod();
+	vm = wrCreateJavaVM();
 }
 
 bool BnWrapper::checkAuthorization(int pid, int uid) {

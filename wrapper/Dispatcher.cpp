@@ -123,7 +123,7 @@ extern "C" void setEnv(JNIEnv* env) {
 	ALOGD("Dispatcher: setEnv(%p)", env);
 }
 
-extern "C" JValTaint* taintCallMethod(JNIEnvMod* pEnv, jclass clazz, int argInfo, int argc, const uint32_t* taints,
+extern "C" JValTaint* taintCallMethod(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) {
     ALOGD("taintCallMethod");
     if (wrapper != 0) {

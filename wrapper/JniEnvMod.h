@@ -583,6 +583,7 @@ struct JNINativeInterfaceMod {
     const jchar* (*GetTaintedStringCritical)(JNIEnvMod*, jstring, u4*, jboolean*);
     void        (*ReleaseTaintedStringCritical)(JNIEnvMod*, jstring, u4, const jchar*);
 
+    jint        (*RegisterTaintedNatives)(JNIEnvMod*, jclass, const JNINativeMethod*, jint);
 //#endif
 };
 
@@ -1342,6 +1343,28 @@ struct _JNIEnvMod {
 	void SetDoubleTaintedField(jobject obj, jfieldID field, jdouble val, u4 taint)
 	{ return functions->SetDoubleTaintedField(this, obj, field, val, taint); }
   
+	jobject GetStaticObjectTaintedField(jclass jclazz, jfieldID field, u4* taint)
+	{ return functions->GetObjectTaintedField(this, jclazz, field, taint); }
+	jboolean GetStaticBooleanTaintedField(jclass jclazz, jfieldID field, u4* taint)
+	{ return functions->GetBooleanTaintedField(this, jclazz, field, taint); }
+	jbyte GetStaticByteTaintedField(jclass jclazz, jfieldID field, u4* taint)
+	{ return functions->GetByteTaintedField(this, jclazz, field, taint); }
+	jchar GetStaticCharTaintedField(jclass jclazz, jfieldID field, u4* taint)
+	{ return functions->GetCharTaintedField(this, jclazz, field, taint); }
+	jshort GetStaticShortTaintedField(jclass jclazz, jfieldID field, u4* taint)
+	{ return functions->GetShortTaintedField(this, jclazz, field, taint); }
+	jint GetStaticIntTaintedField(jclass jclazz, jfieldID field, u4* taint)
+	{ return functions->GetIntTaintedField(this, jclazz, field, taint); }
+	jlong GetStaticLongTaintedField(jclass jclazz, jfieldID field, u4* taint)
+	{ return functions->GetLongTaintedField(this, jclazz, field, taint); }
+	jfloat GetStaticFloatTaintedField(jclass jclazz, jfieldID field, u4* taint)
+	{ return functions->GetFloatTaintedField(this, jclazz, field, taint); }
+	jdouble GetStaticDoubleTaintedField(jclass jclazz, jfieldID field, u4* taint)
+	{ return functions->GetDoubleTaintedField(this, jclazz, field, taint); }
+
+	jint RegisterTaintedNatives(jclass jclazz, const JNINativeMethod* methods, jint nMethods)
+	{ return functions->RegisterTaintedNatives(this, jclazz, methods, nMethods); }
+
 //#endif // WITH_TAINT_TRACKING
 
 #endif /*__cplusplus*/
@@ -1378,8 +1401,13 @@ struct _JavaVM {
     { return functions->AttachCurrentThreadAsDaemon(this, p_env, thr_args); }
 };
 
+#define JNI_OK          (0)         /* no error */
+#define JNI_ERR         (-1)        /* generic error */
+#define JNI_FALSE   0
+#define JNI_TRUE    1
 
 JNIEnvMod* dvmCreateJNIEnvMod();
+JavaVM* wrCreateJavaVM();
 
 struct Callback {
 	int code;
