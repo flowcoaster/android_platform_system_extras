@@ -158,6 +158,7 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callSetStaticObjectField();
 	void callNewString();
 	void callGetArrayLength();
+	void callGetObjectArrayElement();
 	int handleJNIRequest(JValTaint* res, Parcel* reply);
 	void* replydata;
 	void* replytaint;

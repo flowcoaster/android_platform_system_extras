@@ -13,7 +13,8 @@ namespace android {
 
     static void *runNative(void *platformInvoke) {
       platformInvoke_t* pI = (platformInvoke_t *) platformInvoke;
-      ALOGD("call to dvmPlatformInvoke");
+      ALOGD("call to dvmPlatformInvoke(env=%08x, clazz=%08x, argInfo=%08x, argc=%08x, argv=%08x, shorty=%s, funcHandle=%08x, pResult=%08x",
+			(int)pI->jniEnv, (int)pI->clazz, pI->argInfo, pI->argc, (int)pI->argv, pI->shorty, (int)pI->funcHandle, (int)pI->pResult);
       //ALOGD("argv[0]: %d", pI->argv[0]);
       //ALOGD("argv[1]: %d", pI->argv[1]);
 

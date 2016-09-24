@@ -219,7 +219,10 @@ namespace android{
 		void* r2 = replydata+sizeof(jobj);
 		jfieldID fieldID = *((jfieldID*)r2);
 		u4 taint = 0;
-		jboolean result = jniEnv->GetBooleanTaintedField(jobj, fieldID, &taint);
+		/*ALOGD("call GetBooleanTaintedField(jobj=%08x, fieldID=%08x, taint=0)", (int)jobj, (int)fieldID);
+		jboolean result = jniEnv->GetBooleanTaintedField(jobj, fieldID, &taint);*/
+		ALOGD("call GetBooleanField(jobj=%08x, fieldID=%08x)", (int)jobj, (int)fieldID);
+		jboolean result = jniEnv->GetBooleanField(jobj, fieldID);
 		size = sizeof(result) + sizeof(taint);
 		callbackdata = malloc(size);
 		taintsize = sizeof(taint);
@@ -1693,63 +1696,63 @@ namespace android{
 		UNPACK_GETSTATICFIELD();
 		jboolean result = jniEnv->GetStaticBooleanTaintedField(jclazz, fieldID, &taint);
 		WRITEOUT_GETSTATICFIELD();
-		ALOGD("GetBooleanField()->%08x", (int)result);
+		ALOGD("GetStaticBooleanField()->%08x", (int)result);
 	}
 
 	void BpWrapper::callGetStaticByteField() {
 		UNPACK_GETSTATICFIELD();
 		jbyte result = jniEnv->GetStaticByteTaintedField(jclazz, fieldID, &taint);
 		WRITEOUT_GETSTATICFIELD();
-		ALOGD("GetByteField()->%08x", (int)result);
+		ALOGD("GetStaticByteField()->%08x", (int)result);
 	}
 
 	void BpWrapper::callGetStaticCharField() {
 		UNPACK_GETSTATICFIELD();
 		jchar result = jniEnv->GetStaticCharTaintedField(jclazz, fieldID, &taint);
 		WRITEOUT_GETSTATICFIELD();
-		ALOGD("GetCharField()->%08x", (int)result);
+		ALOGD("GetStaticCharField()->%08x", (int)result);
 	}
 
 	void BpWrapper::callGetStaticShortField() {
 		UNPACK_GETSTATICFIELD();
 		jshort result = jniEnv->GetStaticShortTaintedField(jclazz, fieldID, &taint);
 		WRITEOUT_GETSTATICFIELD();
-		ALOGD("GetShortField()->%08x", (int)result);
+		ALOGD("GetStaticShortField()->%08x", (int)result);
 	}
 
 	void BpWrapper::callGetStaticIntField() {
 		UNPACK_GETSTATICFIELD();
 		jint result = jniEnv->GetStaticIntTaintedField(jclazz, fieldID, &taint);
 		WRITEOUT_GETSTATICFIELD();
-		ALOGD("GetIntField()->%08x", (int)result);
+		ALOGD("GetStaticIntField()->%08x", (int)result);
 	}
 
 	void BpWrapper::callGetStaticLongField() {
 		UNPACK_GETSTATICFIELD();
 		jlong result = jniEnv->GetStaticLongTaintedField(jclazz, fieldID, &taint);
 		WRITEOUT_GETSTATICFIELD();
-		ALOGD("GetLongField()->%08x", (int)result);
+		ALOGD("GetStaticLongField()->%08x", (int)result);
 	}
 
 	void BpWrapper::callGetStaticFloatField() {
 		UNPACK_GETSTATICFIELD();
 		jfloat result = jniEnv->GetStaticFloatTaintedField(jclazz, fieldID, &taint);
 		WRITEOUT_GETSTATICFIELD();
-		ALOGD("GetFloatField()->%f", result);
+		ALOGD("GetStaticFloatField()->%f", result);
 	}
 
 	void BpWrapper::callGetStaticDoubleField() {
 		UNPACK_GETSTATICFIELD();
 		jdouble result = jniEnv->GetStaticDoubleTaintedField(jclazz, fieldID, &taint);
 		WRITEOUT_GETSTATICFIELD();
-		ALOGD("GetDoubleField()->%f", result);
+		ALOGD("GetStaticDoubleField()->%f", result);
 	}
 
 	void BpWrapper::callGetStaticObjectField() {
 		UNPACK_GETSTATICFIELD();
 		jobject result = jniEnv->GetStaticObjectTaintedField(jclazz, fieldID, &taint);
 		WRITEOUT_GETSTATICFIELD();
-		ALOGD("GetObjectField()->%08x", (int)result);
+		ALOGD("GetStaticObjectField()->%08x", (int)result);
 	}
 
 	void BpWrapper::callGetStringUTFLength() {
@@ -1808,6 +1811,18 @@ namespace android{
 	void BpWrapper::callGetArrayLength() {
 		jarray jarr = *(jarray*)replydata;
 		jsize result = jniEnv->GetArrayLength(jarr);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callGetObjectArrayElement() {
+		jobjectArray jarr = *(jobjectArray*)replydata;
+		jsize index = *(jsize*)(replydata+sizeof(jarr));
+		ALOGD("call GetObjectArrayElement(jarr=%08x, index=%d)", (int)jarr, index);
+		jobject result = jniEnv->GetObjectArrayElement(jarr, index);
+		ALOGD("callGetObjectArrayElement->%08x", (int)result);
 		taintsize = 0;
 		size = sizeof(result);
 		callbackdata = malloc(size);
@@ -1976,6 +1991,7 @@ namespace android{
 			case 146: callSetStaticObjectField(); break;
 			case 147: callNewString(); break;
 			case 148: callGetArrayLength(); break;
+			case 149: callGetObjectArrayElement(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);

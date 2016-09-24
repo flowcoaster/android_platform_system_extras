@@ -2863,6 +2863,25 @@ static jobjectArray NewObjectArray(JNIEnvMod* env, jsize length, jclass jelement
 	return result;
 }
 
+//code 149
+static jobject GetObjectArrayElement(JNIEnvMod* env, jobjectArray jarr, jsize index) {
+	ALOGD("GetObjectArrayElement(env=%08x, jarr=%08x, index=%d)",
+		(int)env, (int)jarr, index);
+	int size = sizeof(jarr) + sizeof(index);
+	int* data = (int*)malloc(size);
+	data[0] = (int)jarr;
+	data[1] = index;
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 149;
+    em->jniCall.length = size;
+    em->jniCall.taintsize = 0;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jobject result = *(jobject*)(em->jniCall.param_data);
+	ALOGD("GetObjectArrayElement->%08x", (int)result);
+	free(data);
+	return result;
+}
 
 //code 110
 static jbooleanArray NewBooleanArray(JNIEnvMod* env, jsize length) {
@@ -3672,7 +3691,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     ReleaseStringUTFChars,
     GetArrayLength,
     NewObjectArray,
-    NULL, //GetObjectArrayElement,
+    GetObjectArrayElement,
     NULL, //SetObjectArrayElement,
     NewBooleanArray,
     NewByteArray,
