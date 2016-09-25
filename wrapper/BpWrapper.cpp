@@ -219,10 +219,10 @@ namespace android{
 		void* r2 = replydata+sizeof(jobj);
 		jfieldID fieldID = *((jfieldID*)r2);
 		u4 taint = 0;
-		/*ALOGD("call GetBooleanTaintedField(jobj=%08x, fieldID=%08x, taint=0)", (int)jobj, (int)fieldID);
-		jboolean result = jniEnv->GetBooleanTaintedField(jobj, fieldID, &taint);*/
-		ALOGD("call GetBooleanField(jobj=%08x, fieldID=%08x)", (int)jobj, (int)fieldID);
-		jboolean result = jniEnv->GetBooleanField(jobj, fieldID);
+		ALOGD("call GetBooleanTaintedField(jobj=%08x, fieldID=%08x, taint=0)", (int)jobj, (int)fieldID);
+		jboolean result = jniEnv->GetBooleanTaintedField(jobj, fieldID, &taint);
+		/* ALOGD("call GetBooleanField(jobj=%08x, fieldID=%08x)", (int)jobj, (int)fieldID);
+           jboolean result = jniEnv->GetBooleanField(jobj, fieldID);*/
 		size = sizeof(result) + sizeof(taint);
 		callbackdata = malloc(size);
 		taintsize = sizeof(taint);
@@ -609,7 +609,7 @@ namespace android{
 
 	void BpWrapper::callDeleteLocalRef() {
 		jobject jobj = *((jobject*)replydata);
-		jniEnv->DeleteGlobalRef(jobj);
+		jniEnv->DeleteLocalRef(jobj);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
