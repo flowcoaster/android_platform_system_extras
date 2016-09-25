@@ -64,7 +64,13 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callCallStaticVoidMethodA();
 	void callDeleteLocalRef();
 	void callSetShortArrayRegion();
+	void callGetBooleanArrayRegion();
 	void callGetByteArrayRegion();
+	void callGetCharArrayRegion();
+	void callGetShortArrayRegion();
+	void callGetIntArrayRegion();
+	void callGetLongArrayRegion();
+	void callGetFloatArrayRegion();
 	void callGetStringChars();
 	void callReleaseStringChars();
 	void callReleaseStringCritical();
@@ -86,7 +92,6 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callReleaseStringUTFChars();
 	void callGetStringCritical();
 	void callDeleteWeakGlobalRef();
-	void callGetByteArrayElements();
 	void callCallByteMethodA();
 	void callCallCharMethodA();
 	void callCallLongMethodA();
@@ -113,7 +118,12 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callSetByteArrayRegion();
 	void callSetCharArrayRegion();
 	void callSetIntArrayRegion();
+	void callGetBooleanArrayElements();
+	void callGetByteArrayElements();
+	void callGetCharArrayElements();
+	void callGetIntArrayElements();
 	void callGetLongArrayElements();
+	void callGetFloatArrayElements();
 	void callGetDoubleArrayElements();
 	void callGetShortArrayElements();
 	void callGetDoubleArrayRegion();
@@ -159,6 +169,7 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callNewString();
 	void callGetArrayLength();
 	void callGetObjectArrayElement();
+	void callSetObjectArrayElement();
 	int handleJNIRequest(JValTaint* res, Parcel* reply);
 	void* replydata;
 	void* replytaint;

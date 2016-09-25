@@ -221,6 +221,7 @@ namespace android{
 		u4 taint = 0;
 		/*ALOGD("call GetBooleanTaintedField(jobj=%08x, fieldID=%08x, taint=0)", (int)jobj, (int)fieldID);
 		jboolean result = jniEnv->GetBooleanTaintedField(jobj, fieldID, &taint);*/
+		//TODO: fix problem with invalid references on tainted call
 		ALOGD("call GetBooleanField(jobj=%08x, fieldID=%08x)", (int)jobj, (int)fieldID);
 		jboolean result = jniEnv->GetBooleanField(jobj, fieldID);
 		size = sizeof(result) + sizeof(taint);
@@ -719,10 +720,13 @@ namespace android{
 		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)));
 		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(methodID)));
 		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize));
-		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
-		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 objTaint = *((u4*)(args+paramSize*sizeof(jvalue)));
+		u4* paramTaints = (u4*)(args+paramSize*sizeof(jvalue)+sizeof(u4)+sizeof(methodID));
 		u4 resultTaint = 0;
-		jniEnv->CallVoidTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
+		ALOGD("calling VoidTaintedMethodA(jobj=%08x, objTaint=%08x, methodID=%08x, resultTaint=0, args=%08x, paramTaints=%08x)",
+			(int)jobj, objTaint, (int)methodID, (int)args, (int)paramTaints);
+		//jniEnv->CallVoidTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
+		jniEnv->CallVoidMethodA(jobj, methodID, args);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
@@ -735,8 +739,8 @@ namespace android{
 		jmethodID methodID = *((jmethodID*)(replydata+sizeof(jobj)+sizeof(jc)));
 		int paramSize = *((int*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)));
 		jvalue* args = (jvalue*)(replydata+sizeof(jobj)+sizeof(jc)+sizeof(methodID)+sizeof(paramSize));
-		u4 objTaint = *((u4*)(replydata+sizeof(jobj)+sizeof(methodID)+sizeof(paramSize)+paramSize));
-		u4* paramTaints = (u4*)(args+paramSize+sizeof(u4));
+		u4 objTaint = *((u4*)(args+paramSize*sizeof(jvalue)));
+		u4* paramTaints = (u4*)(args+paramSize*sizeof(jvalue)+sizeof(u4)+sizeof(methodID));
 		u4 resultTaint = 0;
 		jobject result = jniEnv->CallNonvirtualObjectTaintedMethodA(jobj, objTaint, jc, 
 			methodID, &resultTaint, args, paramTaints);
@@ -1129,6 +1133,17 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+	void BpWrapper::callGetBooleanArrayRegion() {
+		jbooleanArray jarr = *((jbooleanArray*)(replydata));
+		jsize start = *((jsize*)(replydata+sizeof(jarr)));
+		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+		jboolean* buf = (jboolean*)malloc(len*sizeof(jboolean));
+		jniEnv->GetBooleanArrayRegion(jarr, start, len, buf);
+		size = len*sizeof(jboolean);
+		taintsize = 0;
+		callbackdata = buf;
+	}
+
 	void BpWrapper::callGetByteArrayRegion() {
 		jbyteArray jarr = *((jbyteArray*)(replydata));
 		jsize start = *((jsize*)(replydata+sizeof(jarr)));
@@ -1136,6 +1151,61 @@ namespace android{
 		jbyte* buf = (jbyte*)malloc(len*sizeof(jbyte));
 		jniEnv->GetByteArrayRegion(jarr, start, len, buf);
 		size = len*sizeof(jbyte);
+		taintsize = 0;
+		callbackdata = buf;
+	}
+
+	void BpWrapper::callGetCharArrayRegion() {
+		jcharArray jarr = *((jcharArray*)(replydata));
+		jsize start = *((jsize*)(replydata+sizeof(jarr)));
+		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+		jchar* buf = (jchar*)malloc(len*sizeof(jchar));
+		jniEnv->GetCharArrayRegion(jarr, start, len, buf);
+		size = len*sizeof(jbyte);
+		taintsize = 0;
+		callbackdata = buf;
+	}
+
+	void BpWrapper::callGetShortArrayRegion() {
+		jshortArray jarr = *((jshortArray*)(replydata));
+		jsize start = *((jsize*)(replydata+sizeof(jarr)));
+		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+		jshort* buf = (jshort*)malloc(len*sizeof(jshort));
+		jniEnv->GetShortArrayRegion(jarr, start, len, buf);
+		size = len*sizeof(jshort);
+		taintsize = 0;
+		callbackdata = buf;
+	}
+
+	void BpWrapper::callGetIntArrayRegion() {
+		jlongArray jarr = *((jlongArray*)(replydata));
+		jsize start = *((jsize*)(replydata+sizeof(jarr)));
+		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+		jlong* buf = (jlong*)malloc(len*sizeof(jlong));
+		jniEnv->GetLongArrayRegion(jarr, start, len, buf);
+		size = len*sizeof(jlong);
+		taintsize = 0;
+		callbackdata = buf;
+	}
+
+	void BpWrapper::callGetLongArrayRegion() {
+		jlongArray jarr = *((jlongArray*)(replydata));
+		jsize start = *((jsize*)(replydata+sizeof(jarr)));
+		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+		jlong* buf = (jlong*)malloc(len*sizeof(jlong));
+		jniEnv->GetLongArrayRegion(jarr, start, len, buf);
+		size = len*sizeof(jlong);
+		taintsize = 0;
+		callbackdata = buf;
+	}
+
+	void BpWrapper::callGetFloatArrayRegion() {
+		jfloatArray jarr = *((jfloatArray*)(replydata));
+		jsize start = *((jsize*)(replydata+sizeof(jarr)));
+		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
+		jfloat* buf = (jfloat*)malloc(len*sizeof(jfloat));
+		jniEnv->GetFloatArrayRegion(jarr, start, len, buf);
+		size = len*sizeof(jfloat);
 		taintsize = 0;
 		callbackdata = buf;
 	}
@@ -1328,12 +1398,30 @@ namespace android{
 		memcpy(callbackdata+sizeof(size), &result, sizeof(result));\
 		memcpy(callbackdata+sizeof(size)+sizeof(result), result, size);
 
+	void BpWrapper::callGetBooleanArrayElements() {
+		jbooleanArray jarr = *((jbooleanArray*)replydata);
+		jboolean fake = 0;
+		void* result = jniEnv->GetBooleanArrayElements(jarr, &fake);
+		ALOGD("dalvik void pointer: %08x", (int)result);
+		size = jniEnv->GetArrayLength(jarr)*sizeof(jboolean);
+		GENERIC_GETARRAYELEMENTS();
+	}
+
 	void BpWrapper::callGetByteArrayElements() {
 		jbyteArray jarr = *((jbyteArray*)replydata);
 		jboolean fake = 0;
 		void* result = jniEnv->GetByteArrayElements(jarr, &fake);
 		ALOGD("dalvik void pointer: %08x", (int)result);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jbyte);
+		GENERIC_GETARRAYELEMENTS();
+	}
+
+	void BpWrapper::callGetCharArrayElements() {
+		jcharArray jarr = *((jcharArray*)replydata);
+		jboolean fake = 0;
+		void* result = jniEnv->GetCharArrayElements(jarr, &fake);
+		ALOGD("dalvik void pointer: %08x", (int)result);
+		size = jniEnv->GetArrayLength(jarr)*sizeof(jchar);
 		GENERIC_GETARRAYELEMENTS();
 	}
 
@@ -1346,11 +1434,28 @@ namespace android{
 		GENERIC_GETARRAYELEMENTS();
 	}
 
+	void BpWrapper::callGetIntArrayElements() {
+		jintArray jarr = *((jintArray*)replydata);
+		jboolean fake = 0;
+		void* result = jniEnv->GetIntArrayElements(jarr, &fake);
+		ALOGD("dalvik void pointer: %08x", (int)result);
+		size = jniEnv->GetArrayLength(jarr)*sizeof(jint);
+		GENERIC_GETARRAYELEMENTS();
+	}
+
 	void BpWrapper::callGetLongArrayElements() {
 		jlongArray jarr = *((jlongArray*)replydata);
 		jboolean fake = 0;
 		void* result = jniEnv->GetLongArrayElements(jarr, &fake);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jlong);
+		GENERIC_GETARRAYELEMENTS();
+	}
+
+	void BpWrapper::callGetFloatArrayElements() {
+		jfloatArray jarr = *((jfloatArray*)replydata);
+		jboolean fake = 0;
+		void* result = jniEnv->GetFloatArrayElements(jarr, &fake);
+		size = jniEnv->GetArrayLength(jarr)*sizeof(jfloat);
 		GENERIC_GETARRAYELEMENTS();
 	}
 
@@ -1829,6 +1934,16 @@ namespace android{
 		memcpy(callbackdata, &result, size);
 	}
 
+	void BpWrapper::callSetObjectArrayElement() {
+		jobjectArray jarr = *(jobjectArray*)replydata;
+		jsize index = *(jsize*)(replydata+sizeof(jarr));
+		jobject jobj = *(jobject*)(replydata+sizeof(jarr)+sizeof(index));
+		ALOGD("call SetObjectArrayElement(jarr=%08x, index=%d, jobj=%08x)", (int)jarr, index, (int)jobj);
+		jniEnv->SetObjectArrayElement(jarr, index, jobj);
+		size = taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
 	    int function, taintsize;
 	    reply->readInt32(&function);
@@ -1992,6 +2107,17 @@ namespace android{
 			case 147: callNewString(); break;
 			case 148: callGetArrayLength(); break;
 			case 149: callGetObjectArrayElement(); break;
+			case 150: callSetObjectArrayElement(); break;
+			case 151: callGetBooleanArrayElements(); break;
+			case 152: callGetCharArrayElements(); break;
+			case 153: callGetIntArrayElements(); break;
+			case 154: callGetFloatArrayElements(); break;
+			case 155: callGetBooleanArrayRegion(); break;
+			case 156: callGetCharArrayRegion(); break;
+			case 157: callGetShortArrayRegion(); break;
+			case 158: callGetIntArrayRegion(); break;
+			case 159: callGetLongArrayRegion(); break;
+			case 160: callGetFloatArrayRegion(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);
