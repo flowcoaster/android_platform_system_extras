@@ -1079,6 +1079,16 @@ namespace android{
 		jsize start = *((jsize*)(replydata+sizeof(jarr)));\
 		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
 
+	void BpWrapper::callSetBooleanArrayRegion() {
+		jbooleanArray jarr = *((jbooleanArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jboolean* buf = (jboolean*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetBooleanArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
 	void BpWrapper::callSetByteArrayRegion() {
 		jbyteArray jarr = *((jbyteArray*)(replydata));
 		ARRAYREGION_EXTRACT();
@@ -1122,11 +1132,31 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+	void BpWrapper::callSetLongArrayRegion() {
+		jlongArray jarr = *((jlongArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jlong* buf = (jlong*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetLongArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
 	void BpWrapper::callSetFloatArrayRegion() {
 		jfloatArray jarr = *((jfloatArray*)(replydata));
 		ARRAYREGION_EXTRACT();
 		const jfloat* buf = (jfloat*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
 		jniEnv->SetFloatArrayRegion(jarr, start, len, buf);
+		size = 0;
+		taintsize = 0;
+		callbackdata = malloc(size);
+	}
+
+	void BpWrapper::callSetDoubleArrayRegion() {
+		jdoubleArray jarr = *((jdoubleArray*)(replydata));
+		ARRAYREGION_EXTRACT();
+		const jdouble* buf = (jdouble*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
+		jniEnv->SetDoubleArrayRegion(jarr, start, len, buf);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
@@ -1943,6 +1973,60 @@ namespace android{
 		callbackdata = malloc(size);
 	}
 
+	void BpWrapper::callMonitorEnter() {
+		jobject jobj = *((jobject*)replydata);
+		jint result = jniEnv->MonitorEnter(jobj);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callMonitorExit() {
+		jobject jobj = *((jobject*)replydata);
+		jint result = jniEnv->MonitorExit(jobj);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callNewDirectByteBuffer() {
+		jlong* jl = (jlong*)replydata;
+		void* address = malloc(jl[0]*sizeof(address));
+		memcpy(address, &jl[1], jl[0]*sizeof(address));
+		ALOGD("callNewDirectByteBuffer(capacity=%lld, address=%08x)", jl[0], (int)address);
+		jobject result = jniEnv->NewDirectByteBuffer(address, jl[0]);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		memcpy(callbackdata, &result, size);
+	}
+
+	void BpWrapper::callGetDirectBufferAddress() {
+		jobject jbuf = *((jobject*)replydata);
+		ALOGD("callGetDirectBufferAddress(jbuf=%08x)", (int)jbuf);
+		void* result = jniEnv->GetDirectBufferAddress(jbuf);
+		jlong resultsize = jniEnv->GetDirectBufferCapacity(jbuf);
+		taintsize = 0;
+		size = sizeof(resultsize) + resultsize;
+		callbackdata = malloc(size);
+		jlong* callbackdatap = (jlong*)callbackdata;
+		callbackdatap[0] = resultsize;
+		memcpy(&callbackdatap[1], result, resultsize);
+	}
+
+	void BpWrapper::callGetDirectBufferCapacity() {
+		jobject jbuf = *((jobject*)replydata);
+		ALOGD("callGetDirectBufferCapacity(jbuf=%08x)", (int)jbuf);
+		jlong result = jniEnv->GetDirectBufferCapacity(jbuf);
+		taintsize = 0;
+		size = sizeof(result);
+		callbackdata = malloc(size);
+		jlong* callbackdatap = (jlong*)callbackdata;
+		callbackdatap[0] = result;
+	}
+
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
 	    int function, taintsize;
 	    reply->readInt32(&function);
@@ -2117,6 +2201,13 @@ namespace android{
 			case 158: callGetIntArrayRegion(); break;
 			case 159: callGetLongArrayRegion(); break;
 			case 160: callGetFloatArrayRegion(); break;
+			case 161: callSetBooleanArrayRegion(); break;
+			case 162: callSetLongArrayRegion(); break;
+			case 163: callSetDoubleArrayRegion(); break;
+			case 164: callMonitorEnter(); break;
+			case 165: callMonitorExit(); break;
+			case 166: callNewDirectByteBuffer(); break;
+			case 167: callGetDirectBufferAddress(); break;
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);

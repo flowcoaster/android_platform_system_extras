@@ -115,9 +115,12 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callCallStaticFloatMethodA();
 	void callCallStaticDoubleMethodA();
 	void callSetFloatArrayRegion();
+	void callSetBooleanArrayRegion();
 	void callSetByteArrayRegion();
 	void callSetCharArrayRegion();
 	void callSetIntArrayRegion();
+	void callSetLongArrayRegion();
+	void callSetDoubleArrayRegion();
 	void callGetBooleanArrayElements();
 	void callGetByteArrayElements();
 	void callGetCharArrayElements();
@@ -170,6 +173,11 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callGetArrayLength();
 	void callGetObjectArrayElement();
 	void callSetObjectArrayElement();
+	void callMonitorEnter();
+	void callMonitorExit();
+	void callNewDirectByteBuffer();
+	void callGetDirectBufferAddress();
+	void callGetDirectBufferCapacity();
 	int handleJNIRequest(JValTaint* res, Parcel* reply);
 	void* replydata;
 	void* replytaint;

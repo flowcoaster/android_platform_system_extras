@@ -70,6 +70,13 @@ static jint GetVersion(JNIEnvMod* env) {
 	return result;
 }
 
+static jclass DefineClass(JNIEnvMod* env, const char *name, jobject loader,
+    const jbyte* buf, jsize bufLen) {
+	ALOGE("DefineClass(env=%08x, name=%s, loader=%08x, buf=%08x, bufLen=%d) is not supported.",
+		(int)env, name, (int)loader, (int)buf, bufLen);
+	return NULL;
+}
+
 //code 4
 static jclass FindClass(JNIEnvMod* env, const char* name) {
 	ALOGD("jniEnvMod->FindClass(env=%08x, name=%s)", (int)env, name);
@@ -245,7 +252,11 @@ static void ExceptionClear(JNIEnvMod* env) {
     ext->execManager->jniCall.param_data = 0;
     ext->execManager->reqJniCall();
 	ALOGD("returning after ExceptionClear");
-}	
+}
+
+static void FatalError(JNIEnvMod* env, const char* msg) {
+    ALOGE("FatalError(env=%08x, msg=%s) is not supported.", (int)env, msg);
+}
 
 //code 125
 static jint PushLocalFrame(JNIEnvMod* env, jint capacity) {
@@ -3343,6 +3354,20 @@ static void GetDoubleArrayRegion(JNIEnvMod* env, jdoubleArray jarr, jsize start,
 	memcpy(d2, &len, sizeof(len));\
 	d2 += sizeof(len);
 
+//code 161
+static void SetBooleanArrayRegion(JNIEnvMod* env, jbooleanArray jarr, jsize start, jsize len, const jboolean* buf) {
+	ALOGD("jniEnvMod->SetBooleanArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+		(int)env, (int)jarr, start, len, (int) buf);
+	ARRAYREGION_COPYOUT();
+	memcpy(d2, buf, len*sizeof(jboolean));
+    ext->execManager->jniCall.function = 161;
+    ext->execManager->jniCall.taintsize = 0;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	free(data);
+}
+
 //code 94
 static void SetByteArrayRegion(JNIEnvMod* env, jbyteArray jarr, jsize start, jsize len, const jbyte* buf) {
 	ALOGD("jniEnvMod->SetByteArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
@@ -3350,6 +3375,7 @@ static void SetByteArrayRegion(JNIEnvMod* env, jbyteArray jarr, jsize start, jsi
 	ARRAYREGION_COPYOUT();
 	memcpy(d2, buf, len*sizeof(jbyte));
     ext->execManager->jniCall.function = 94;
+    ext->execManager->jniCall.taintsize = 0;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
@@ -3363,6 +3389,7 @@ static void SetCharArrayRegion(JNIEnvMod* env, jcharArray jarr, jsize start, jsi
 	ARRAYREGION_COPYOUT();
 	memcpy(d2, buf, len*sizeof(jchar));
     ext->execManager->jniCall.function = 95;
+    ext->execManager->jniCall.taintsize = 0;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
@@ -3376,6 +3403,7 @@ static void SetShortArrayRegion(JNIEnvMod* env, jshortArray jarr, jsize start, j
 	ARRAYREGION_COPYOUT();
 	memcpy(d2, buf, len*sizeof(jshort));
     ext->execManager->jniCall.function = 53;
+    ext->execManager->jniCall.taintsize = 0;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
@@ -3389,6 +3417,21 @@ static void SetIntArrayRegion(JNIEnvMod* env, jintArray jarr, jsize start, jsize
 	ARRAYREGION_COPYOUT();
 	memcpy(d2, buf, len*sizeof(jint));
     ext->execManager->jniCall.function = 96;
+    ext->execManager->jniCall.taintsize = 0;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	free(data);
+}
+
+//code 162
+static void SetLongArrayRegion(JNIEnvMod* env, jlongArray jarr, jsize start, jsize len, const jlong* buf) {
+	ALOGD("SetIntArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+		(int)env, (int)jarr, start, len, (int) buf);
+	ARRAYREGION_COPYOUT();
+	memcpy(d2, buf, len*sizeof(jlong));
+    ext->execManager->jniCall.function = 162;
+    ext->execManager->jniCall.taintsize = 0;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
@@ -3402,6 +3445,21 @@ static void SetFloatArrayRegion(JNIEnvMod* env, jfloatArray jarr, jsize start, j
 	ARRAYREGION_COPYOUT();
 	memcpy(d2, buf, len*sizeof(jfloat));
     ext->execManager->jniCall.function = 93;
+    ext->execManager->jniCall.taintsize = 0;
+    ext->execManager->jniCall.length = size;
+    ext->execManager->jniCall.param_data = data;
+    ext->execManager->reqJniCall();
+	free(data);
+}
+
+//code 163
+static void SetDoubleArrayRegion(JNIEnvMod* env, jdoubleArray jarr, jsize start, jsize len, const jdouble* buf) {
+	ALOGD("SetFloatArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+		(int)env, (int)jarr, start, len, (int) buf);
+	ARRAYREGION_COPYOUT();
+	memcpy(d2, buf, len*sizeof(jdouble));
+    ext->execManager->jniCall.function = 163;
+    ext->execManager->jniCall.taintsize = 0;
     ext->execManager->jniCall.length = size;
     ext->execManager->jniCall.param_data = data;
     ext->execManager->reqJniCall();
@@ -3453,6 +3511,28 @@ static jint UnregisterNatives(JNIEnvMod* env, jclass jclazz) {
 	em->jniCall.function = 124;
 	em->jniCall.length = sizeof(jclazz);
 	em->jniCall.param_data = &jclazz;
+	em->reqJniCall();
+	return *(jint*)(em->jniCall.param_data);
+}
+
+//code 164
+static jint MonitorEnter(JNIEnvMod* env, jobject jobj) {
+	ALOGD("MonitorEnter(env=%08x, jobj=%08x)", (int)env, (int)jobj);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 164;
+	em->jniCall.length = sizeof(jobj);
+	em->jniCall.param_data = &jobj;
+	em->reqJniCall();
+	return *(jint*)(em->jniCall.param_data);
+}
+
+//code 165
+static jint MonitorExit(JNIEnvMod* env, jobject jobj) {
+	ALOGD("MonitorExit(env=%08x, jobj=%08x)", (int)env, (int)jobj);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	em->jniCall.function = 165;
+	em->jniCall.length = sizeof(jobj);
+	em->jniCall.param_data = &jobj;
 	em->reqJniCall();
 	return *(jint*)(em->jniCall.param_data);
 }
@@ -3657,11 +3737,60 @@ static jboolean ExceptionCheck(JNIEnvMod* env) {
 	return result;
 }
 
+//code 166
+static jobject NewDirectByteBuffer(JNIEnvMod* env, void* address, jlong capacity) {
+	ALOGD("NewDirectByteBuffer(env=%08x, address=%08x, capacity=%lld)", (int)env, (int)address, (int)capacity);
+	ALOGW("Direct Byte Buffer not fully supported!"); //TODO
+	int size = sizeof(capacity) + capacity*sizeof(address);
+	jlong* data = (jlong*)malloc(size);
+	data[0] = capacity;
+	memcpy(&data[1], address, capacity*sizeof(address));
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 166;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jobject result = *(jobject*)(em->jniCall.param_data);
+	free(data);
+	return result;
+}
+
+//code 167
+static void* GetDirectBufferAddress(JNIEnvMod* env, jobject jbuf) {
+	ALOGD("GetDirectBufferAddress(env=%08x, jbuf=%08x)", (int)env, (int)jbuf);
+	ALOGW("Direct Byte Buffer not fully supported!"); //TODO
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 167;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = sizeof(jbuf);
+    em->jniCall.param_data = &jbuf;
+    em->reqJniCall();
+	jlong* resultsize = (jlong*)em->jniCall.param_data;
+	void* result = malloc(resultsize[0]);
+	memcpy(result, &resultsize[1], resultsize[0]);
+	return result;
+}
+
+//code 168
+static jlong GetDirectBufferCapacity(JNIEnvMod* env, jobject jbuf) {
+	ALOGD("GetDirectBufferCapacity(env=%08x, jbuf=%08x)", (int)env, (int)jbuf);
+	ALOGW("Direct Byte Buffer not fully supported!"); //TODO
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 168;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = sizeof(jbuf);
+    em->jniCall.param_data = &jbuf;
+    em->reqJniCall();
+	return *(jlong*)em->jniCall.param_data;
+}
+
 //code 118
 static jobjectRefType GetObjectRefType(JNIEnvMod* env, jobject jobj) {
 	ALOGD("jniEnvMod->GetObjectRefType(env=%08x, jobj=%08x)", (int)env, (int)jobj);
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
     em->jniCall.function = 118;
+    em->jniCall.taintsize = 0;
     em->jniCall.length = sizeof(jobj);
     em->jniCall.param_data = &jobj;
     em->reqJniCall();
@@ -3676,7 +3805,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NULL,
     NULL,
     GetVersion,
-    NULL, //DefineClass,
+    DefineClass,
     FindClass,
     FromReflectedMethod,
     FromReflectedField,
@@ -3689,7 +3818,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     ExceptionOccurred,
     ExceptionDescribe,
     ExceptionClear,
-    NULL, //FatalError,
+    FatalError,
     PushLocalFrame,
     PopLocalFrame,
     NewGlobalRef,
@@ -3878,18 +4007,18 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     GetLongArrayRegion,
     GetFloatArrayRegion,
     GetDoubleArrayRegion,
-    NULL, //SetBooleanArrayRegion,
+    SetBooleanArrayRegion,
     SetByteArrayRegion,
     SetCharArrayRegion,
     SetShortArrayRegion,
     SetIntArrayRegion,
-    NULL, //SetLongArrayRegion,
+    SetLongArrayRegion,
     SetFloatArrayRegion,
-    NULL, //SetDoubleArrayRegion,
+    SetDoubleArrayRegion,
     RegisterNatives,
     UnregisterNatives,
-    NULL, //MonitorEnter,
-    NULL, //MonitorExit,
+    MonitorEnter,
+    MonitorExit,
     GetJavaVM, //TODO: full implementation
     GetStringRegion,
     GetStringUTFRegion,
@@ -3900,9 +4029,9 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     NewWeakGlobalRef,
     DeleteWeakGlobalRef,
     ExceptionCheck,
-    NULL, //NewDirectByteBuffer,
-    NULL, //GetDirectBufferAddress,
-    NULL, //GetDirectBufferCapacity,
+    NewDirectByteBuffer,
+    GetDirectBufferAddress,
+    GetDirectBufferCapacity,
     GetObjectRefType,
 
     // following fields are initializers for
