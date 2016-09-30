@@ -198,9 +198,9 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    	reply->writeInt32(myExecManager->jniCall.function);
 	    	reply->writeInt32(myExecManager->jniCall.length);
 	    	reply->writeInt32(myExecManager->jniCall.taintsize);
-	    	reply->write(myExecManager->jniCall.taint_data, myExecManager->jniCall.taintsize);
+	    	//reply->write(myExecManager->jniCall.taint_data, myExecManager->jniCall.taintsize);
 	    	reply->write(myExecManager->jniCall.param_data, myExecManager->jniCall.length);
-			for (int i=0; i<myExecManager->jniCall.length; i++) reply->writeInt32(0); //placeholder for taint values
+			for (int i=0; i<myExecManager->jniCall.taintsize; i++) reply->writeInt32(0); //placeholder for taint values
 	    } else {
 	      ALOGD("Unexpected status code from Execution Manager: %d", status);
 	      free((void*)argv);
@@ -216,7 +216,7 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    data.readInt32(&datasize);
 	    data.readInt32(&taintsize);
 	    ALOGD("callback on JNI request: read function=%d, datasize=%d, taintsize=%d", function, datasize, taintsize);
-	    void* rawdata = malloc(datasize); //freed at the end off CALLBACK
+	    void* rawdata = malloc(datasize); //freed at the end of CALLBACK
 	    data.read(rawdata, datasize);
 	    ExecutionManager* myExecManager = ((JNIEnvModExt*)jniEnv)->execManager;
 	    if (function == myExecManager->jniCall.function) {
@@ -236,8 +236,9 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    	reply->writeInt32(myExecManager->jniCall.function);
 	    	reply->writeInt32(myExecManager->jniCall.length);
 	    	reply->writeInt32(myExecManager->jniCall.taintsize);
-	    	reply->write(myExecManager->jniCall.taint_data, myExecManager->jniCall.taintsize);
+	    	//reply->write(myExecManager->jniCall.taint_data, myExecManager->jniCall.taintsize);
 	    	reply->write(myExecManager->jniCall.param_data, myExecManager->jniCall.length);
+			for (int i=0; i<myExecManager->jniCall.taintsize; i++) reply->writeInt32(0); //placeholder for taint values
 	    } else if (status == ExecutionManager::FINISHED) {
 	      ALOGD("dvmPlatformInvoke finished. result=%lld", myExecManager->platformInvoke.pResult->j);
 	      ALOGD("wrote result, status=%d (argc=%d)",

@@ -66,7 +66,7 @@ static jint GetVersion(JNIEnvMod* env) {
 	ext->execManager->jniCall.function = 3;
 	ext->execManager->jniCall.length = 0;
 	ext->execManager->reqJniCall();
-	jint result = (jint)*(int*)(ext->execManager->jniCall.param_data);
+	jint result = *(jint*)(ext->execManager->jniCall.param_data);
 	return result;
 }
 
@@ -79,29 +79,30 @@ static jclass DefineClass(JNIEnvMod* env, const char *name, jobject loader,
 
 //code 4
 static jclass FindClass(JNIEnvMod* env, const char* name) {
-	ALOGD("jniEnvMod->FindClass(env=%08x, name=%s)", (int)env, name);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	ALOGD("jniEnvMod->FindClass(env=%08x, name=%s at %08x)", (int)env, name, (int)name);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	if (name == 0) return NULL;
 	int size = strlen(name)+1;
-    ext->execManager->jniCall.function = 4;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = name;
-    ext->execManager->reqJniCall();
-    int* intResult = (int*)(ext->execManager->jniCall.param_data);
-    jclass resultClass = (jclass)(*intResult);
-    ALOGD("returning %08x", (int)resultClass);
-    return resultClass;
+    em->jniCall.function = 4;
+    em->jniCall.length = size;
+    em->jniCall.taintsize = 0;
+    em->jniCall.param_data = name;
+    em->reqJniCall();
+    jclass result = *(jclass*)(em->jniCall.param_data);
+    ALOGD("returning %08x", (int)result);
+    return result;
 }
 
 //code 64
 static jmethodID FromReflectedMethod(JNIEnvMod* env, jobject jmethod) {
 	ALOGD("jniEnvMod->FromReflectedMethod(env=%08x, jmethod=%08x)", (int)env, (int)jmethod);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jmethod);
-    ext->execManager->jniCall.function = 64;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = &jmethod;
-    ext->execManager->reqJniCall();
-	return *((jmethodID*)(ext->execManager->jniCall.param_data));
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 64;
+    em->jniCall.length = sizeof(jmethod);
+    em->jniCall.taintsize = 0;
+    em->jniCall.param_data = &jmethod;
+    em->reqJniCall();
+	return *((jmethodID*)(em->jniCall.param_data));
 }
 
 //code 58
@@ -392,13 +393,13 @@ static jobject AllocObject(JNIEnvMod* env, jclass jclazz) {
 	int paramSize = 8*ext->execManager->getNumParams(methodID); \
 	ALOGD("paramSize=%d", paramSize); \
 	int size = sizeof(jobject) + sizeof(jmethodID) + paramSize; \
-	void* data = malloc(size); \
+	int taintsize = paramSize+sizeof(jobject)+sizeof(methodID); \
+	void* data = malloc(size+taintsize); \
 	memcpy(data, &jobj, sizeof(jobj)); \
 	void* d2 = data + sizeof(jobj); \
 	memcpy(d2, &methodID, sizeof(methodID)); \
 	d2 += sizeof(methodID); \
 	const char* sig = ext->execManager->getSignatureForMethod(methodID); \
-	int taintsize = paramSize*sizeof(jvalue)+sizeof(jobject)+sizeof(methodID);
 
 #define NEW_COPY() \
 	JNIEnvModExt* ext = (JNIEnvModExt*)env; \
@@ -3489,7 +3490,7 @@ static jint RegisterNatives(JNIEnvMod* env, jclass jclazz, const JNINativeMethod
 		memcpy(d2, methods[i].signature, j*sizeof(char));
 		d2 += j*sizeof(char);
 		int v = (int)methods[i].fnPtr;
-		ALOGD("v=%08x", v);
+		ALOGD("v=%08x, fnPtr=%08x", v, methods[i].fnPtr);
 		memcpy(d2, &v, sizeof(v));
 		d2 += sizeof(v);
 		ALOGD("copied out %s (%s) @ %08x", methods[i].name, methods[i].signature, (int)methods[i].fnPtr);
@@ -3540,7 +3541,9 @@ static jint MonitorExit(JNIEnvMod* env, jobject jobj) {
 static jint GetJavaVM(JNIEnvMod* env, JavaVM** vm) {
 	ALOGD("GetJavaVM(env=%08x, vm=%08x)", (int)env, (int)vm);
 	*vm = (JavaVM*)&gInvokeInterface;
-    return (*vm == NULL) ? JNI_ERR : JNI_OK;
+    jint result = (*vm == NULL) ? JNI_ERR : JNI_OK;
+	ALOGD("GetJavaVM -> %d", result);
+	return result;
 }
 
 //code 120
