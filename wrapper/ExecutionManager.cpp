@@ -251,7 +251,7 @@ namespace android {
 	}
 
 	void ExecutionManager::addStringChars(int dalvikP, int length, const jchar* wrapperP) {
-		ALOGD("addStringChars(dalvikP=%08x, length=%08x, wrapperP=%s)", dalvikP, length, wrapperP);
+		ALOGD("addStringChars(dalvikP=%08x, length=%08x, wrapperP=%s)", dalvikP, length, (const char*)wrapperP);
 		stringMap_t* newCharsEntry = (stringMap_t*)malloc(sizeof(stringMap_t));
 		ALOGD("sizeof(stringMap_t)=%d", sizeof(stringMap_t));
 		if (charsList == 0) { //no method added yet
@@ -261,7 +261,7 @@ namespace android {
 		}
 		charsList = newCharsEntry;
 		ALOGD("added string map entry with dalvikP=%08x, length=%d, wrapperP=%s, next=%08x",
-			(int)(charsList->dalvikP), charsList->length, charsList->wrapperP, (int)(charsList->next));
+			(int)(charsList->dalvikP), charsList->length, (const char*)charsList->wrapperP, (int)(charsList->next));
 	}
 
 	stringMap_t* ExecutionManager::getDalvikChars(const jchar* wrapperP) {

@@ -3488,11 +3488,11 @@ static jint RegisterNatives(JNIEnvMod* env, jclass jclazz, const JNINativeMethod
 		d2 += sizeof(j);
 		memcpy(d2, methods[i].signature, j*sizeof(char));
 		d2 += j*sizeof(char);
-		int v = *(int*)(methods[i].fnPtr);
+		int v = (int)methods[i].fnPtr;
 		ALOGD("v=%08x", v);
-		memcpy(d2, &(methods[i].fnPtr), sizeof(void*));
-		d2 += sizeof(void*);
-		ALOGD("copied out %s (%s) @ %08x", methods[i].name, methods[i].signature, methods[i].fnPtr);
+		memcpy(d2, &v, sizeof(v));
+		d2 += sizeof(v);
+		ALOGD("copied out %s (%s) @ %08x", methods[i].name, methods[i].signature, (int)methods[i].fnPtr);
 	}
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
     em->jniCall.function = 145;
@@ -3739,7 +3739,7 @@ static jboolean ExceptionCheck(JNIEnvMod* env) {
 
 //code 166
 static jobject NewDirectByteBuffer(JNIEnvMod* env, void* address, jlong capacity) {
-	ALOGD("NewDirectByteBuffer(env=%08x, address=%08x, capacity=%lld)", (int)env, (int)address, (int)capacity);
+	ALOGD("NewDirectByteBuffer(env=%08x, address=%08x, capacity=%lld)", (int)env, (int)address, capacity);
 	ALOGW("Direct Byte Buffer not fully supported!"); //TODO
 	int size = sizeof(capacity) + capacity*sizeof(address);
 	jlong* data = (jlong*)malloc(size);
@@ -3891,9 +3891,9 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     CallNonvirtualDoubleMethod,
     CallNonvirtualDoubleMethodV,
     CallNonvirtualDoubleMethodA,
-    NULL, //CallNonvirtualVoidMethod,
-    NULL, //CallNonvirtualVoidMethodV,
-    NULL, //CallNonvirtualVoidMethodA,
+    CallNonvirtualVoidMethod,
+    CallNonvirtualVoidMethodV,
+    CallNonvirtualVoidMethodA,
     GetFieldID,
     GetObjectField,
     GetBooleanField,

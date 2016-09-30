@@ -247,11 +247,30 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 		ALOGD("now freeing return data pointer");
 	    free(rawdata);
 	    return NO_ERROR;
-	} break;
-        default:
+	} case CHANGE_FUNC: {
+	    //const int libref = data.readInt32();
+		int oldhandle = data.readInt32();
+		int handle = data.readInt32();
+		void* pHandle = (void*)handle;
+		ALOGD("change func: libref=%08x, handle=%08x, pHandle=%08x", oldhandle, handle, (int)pHandle);
+		int size = libtable.size();
+		int funcref = 0;
+		/*for (int i=0; i++; i<size) {
+			if ((void*)oldhandle == libtable[i]) libtable[i]=pHandle;
+		}*/
+		//if (funcref == 0) {
+			funcref = (int)libtable.add(pHandle);
+		//}
+		reply->writeInt32(funcref);
+		return NO_ERROR;
+	 	break;
+    } default: {
 	    aout << "BnWrapper::onTransact: unknown command";
             return BBinder::onTransact(code, data, reply, flags);
     }
 }
 
 }
+
+}
+

@@ -26,7 +26,8 @@ class IWrapper : public IInterface {
 	    ADD_LIB,
 	    ADD_FUNC,
 	    TAINT_CALL,
-		CALLBACK
+		CALLBACK,
+		CHANGE_FUNC
         };
         // calls the requested function sends the result as reply over binder
 	virtual int32_t call(char* library, char* method, Vector<void*> params, Vector<int> sizeofparam, Vector<int> taints) = 0;
@@ -38,6 +39,7 @@ class IWrapper : public IInterface {
 	virtual JValTaint* taintCall(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) = 0;
 	virtual int callback(int function, int length, void* data, int taintlength, JValTaint* res) = 0;
+	virtual int32_t changeFunc(int32_t oldHandle, int32_t newHandle) = 0;
 
         DECLARE_META_INTERFACE(Wrapper);  // Expands to 5 lines below:
         //static const android::String16 descriptor;

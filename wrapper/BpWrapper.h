@@ -193,6 +193,7 @@ class BpWrapper : public BpInterface<IWrapper> {
 	virtual JValTaint* taintCall(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName);
 	virtual int callback(int function, int length, void* data, int taintlength, JValTaint* res);
+	virtual int32_t changeFunc(int32_t oldHandle, int32_t newHandle);
 
 	void setJniEnv(JNIEnvMod* jniEnv);
 };

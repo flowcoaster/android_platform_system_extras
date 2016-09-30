@@ -347,7 +347,7 @@ namespace android{
 		u4 taint = *((u4*)r2);
 		ALOGD("SetObjectTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, (int)value, taint);
 		jniEnv->SetObjectTaintedField(jobj, fieldID, value, taint);
-		size = 0;
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
@@ -361,7 +361,7 @@ namespace android{
 		u4 taint = *((u4*)r2);
 		ALOGD("SetBooleanTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetBooleanTaintedField(jobj, fieldID, value, taint);
-		size = 0;
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
@@ -375,7 +375,7 @@ namespace android{
 		u4 taint = *((u4*)r2);
 		ALOGD("SetByteTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetByteTaintedField(jobj, fieldID, value, taint);
-		size = 0;
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
@@ -389,7 +389,7 @@ namespace android{
 		u4 taint = *((u4*)r2);
 		ALOGD("SetCharTaintedField: Field %08x to %c with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetCharTaintedField(jobj, fieldID, value, taint);
-		size = 0;
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
@@ -403,7 +403,7 @@ namespace android{
 		u4 taint = *((u4*)r2);
 		ALOGD("SetShortTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetShortTaintedField(jobj, fieldID, value, taint);
-		size = 0;
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
@@ -417,7 +417,7 @@ namespace android{
 		u4 taint = *((u4*)r2);
 		ALOGD("SetIntTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetIntTaintedField(jobj, fieldID, value, taint);
-		size = 0;
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
@@ -431,7 +431,7 @@ namespace android{
 		u4 taint = *((u4*)r2);
 		ALOGD("SetLongTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, (int)value, taint);
 		jniEnv->SetLongTaintedField(jobj, fieldID, value, taint);
-		size = 0;
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
@@ -445,7 +445,7 @@ namespace android{
 		u4 taint = *((u4*)r2);
 		ALOGD("SetFloatTaintedField: Field %08x to %f with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetFloatTaintedField(jobj, fieldID, value, taint);
-		size = 0;
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
@@ -459,7 +459,7 @@ namespace android{
 		u4 taint = *((u4*)r2);
 		ALOGD("SetDoubleTaintedField: Field %08x to %f with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetDoubleTaintedField(jobj, fieldID, value, taint);
-		size = 0;
+		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
@@ -1916,11 +1916,11 @@ namespace android{
 			r2 += j*sizeof(char);
 			meth->name = name;
 			meth->signature = signature;
-			meth->fnPtr = r2;
 			int code = *(int*)r2;
+			meth->fnPtr = (void*)code;
 			r2 += sizeof(void*);
 			ALOGD("registering native method from library: %s (%s), code at %08x",
-				meth->name, meth->signature, meth->fnPtr);
+				meth->name, meth->signature, (int)meth->fnPtr);
 			ALOGD("code=%08x", code);
 			if(jniEnv->RegisterTaintedNatives(jclazz, meth, 1) == -1)
 				result = -1;
@@ -2275,7 +2275,7 @@ namespace android{
 
 	JValTaint* BpWrapper::taintCall(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) {
-	    ALOGD("BpWrapper::taintcall(clazz=%p, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s)", clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName);
+	    ALOGD("BpWrapper::taintcall(clazz=%08x, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s)", clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName);
 	    setJniEnv(pEnv);
 	    Parcel data, reply;
 	    Parcel* replyPtr = &reply;
@@ -2346,6 +2346,16 @@ namespace android{
 			ALOGE("Unexpected status: %d", execStatus);
 	    }
 	    return execStatus;
+	}
+
+	int32_t BpWrapper::changeFunc(int32_t oldHandle, int32_t newHandle) {
+		Parcel data, reply;
+		data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
+		data.writeInt32(oldHandle);
+		data.writeInt32(newHandle);
+		remote()->transact(CHANGE_FUNC, data, &reply);
+		int funcref = reply.readInt32();
+		return funcref;
 	}
 
 }

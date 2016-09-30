@@ -33,6 +33,11 @@ class Wrapper : public BnWrapper {
 	INFO("Wrapper::callBack()");
 	return 0;
     }
+
+	virtual int32_t changeFunc(int32_t oldHandle, int32_t newHandle) {
+		INFO("Wrapper::changeFunc()");
+		return 0;
+	}
 };
 
 int androidmain(int argc, char **argv);

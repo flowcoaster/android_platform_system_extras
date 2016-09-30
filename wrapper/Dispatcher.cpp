@@ -146,7 +146,14 @@ extern "C" int32_t addLib(const char* filename) {
 extern "C" int32_t addFunc(const char* funcName, int32_t libRef) {
     ALOGD("-> addFunc(funcName=%s, libRef=%d)", funcName, libRef);
     if (wrapper != 0) {
-	return wrapper->addFunc(funcName, libRef);
+		return wrapper->addFunc(funcName, libRef);
+    } else return 0;
+}
+
+extern "C" int32_t changeFunc(int32_t oldHandle, int32_t newHandle) {
+    ALOGD("-> changeFung(oldHandle=%08x, newHandle=%d)", oldHandle, newHandle);
+    if (wrapper != 0) {
+		return wrapper->changeFunc(oldHandle, newHandle);
     } else return 0;
 }
 
