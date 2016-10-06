@@ -4,8 +4,9 @@
 #include "ExecutionManager.h"
 #include "IWrapper.h"
 
-//#define ALOGD(a, ...) printf(a, ##__VA_ARGS__);printf("\n");
-//#define ALOGE(a, ...) printf(a, ##__VA_ARGS__);printf("\n");
+#ifndef FLOWCOASTER_DEBUG
+	#define ALOGD(...) void();
+#endif
 
 namespace android {
 

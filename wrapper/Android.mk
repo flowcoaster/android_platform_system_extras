@@ -61,14 +61,14 @@ LOCAL_SHARED_LIBRARIES := libbinder libutils libcutils libdl
 LOCAL_C_INCLUDES += frameworks/base/include system/core/include frameworks/native/include bionic/libc/include libnativehelper/include
 include $(BUILD_SHARED_LIBRARY)
 
-include $(CLEAR_VARS)
-LOCAL_C_FLAGS += -DWITH_DALVIK_BINDER_SERVICE=1
-LOCAL_MODULE := dvmjnibindertest
-LOCAL_MODULE_TAGS := debug
-LOCAL_SRC_FILES := $(test_sources)
-LOCAL_SHARED_LIBRARIES := libbinder libutils libcutils libdl
-LOCAL_C_INCLUDES += frameworks/base/include system/core/include frameworks/native/include bionic/libc/include libnativehelper/include
-include $(BUILD_EXECUTABLE)
+#include $(CLEAR_VARS)
+#LOCAL_C_FLAGS += -DWITH_DALVIK_BINDER_SERVICE=1
+#LOCAL_MODULE := dvmjnibindertest
+#LOCAL_MODULE_TAGS := debug
+#LOCAL_SRC_FILES := $(test_sources)
+#LOCAL_SHARED_LIBRARIES := libbinder libutils libcutils libdl
+#LOCAL_C_INCLUDES += frameworks/base/include system/core/include frameworks/native/include bionic/libc/include libnativehelper/include
+#include $(BUILD_EXECUTABLE)
 
 #include $(CLEAR_VARS)
 #LOCAL_C_FLAGS += -DWITH_DALVIK_BINDER_SERVICE=1

@@ -1,9 +1,12 @@
 #include <dlfcn.h> // for loading libraries
 #include <binder/IPCThreadState.h>
 #include <BnWrapper.h>
-#include <utils/TextOutput.h> // for aout
 
 #define LOG_TAG "BnWrapper=Server"
+
+#ifndef FLOWCOASTER_DEBUG
+	#define ALOGD(...) void();
+#endif
 
 namespace android {
 
@@ -17,10 +20,10 @@ BnWrapper::BnWrapper(int pid, int uid) {
 
 bool BnWrapper::checkAuthorization(int pid, int uid) {
     if (pid != callerPid || uid != callerUid) {
-	ALOGD("Unauthorized Call to Binder service pid %d!=%d or uid %d!=%d", pid, callerPid, uid, callerUid);
-	return false;
-    } else
-	return true;
+		ALOGD("Unauthorized Call to Binder service pid %d!=%d or uid %d!=%d",
+			pid, callerPid, uid, callerUid);
+		return false;
+    } else return true;
 }
 
 status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags) {
@@ -240,10 +243,12 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    	reply->write(myExecManager->jniCall.param_data, myExecManager->jniCall.length);
 			for (int i=0; i<myExecManager->jniCall.taintsize; i++) reply->writeInt32(0); //placeholder for taint values
 	    } else if (status == ExecutionManager::FINISHED) {
-	      ALOGD("dvmPlatformInvoke finished. result=%lld", myExecManager->platformInvoke.pResult->j);
-	      ALOGD("wrote result, status=%d (argc=%d)",
-		reply->writeInt64(myExecManager->platformInvoke.pResult->j), myExecManager->platformInvoke.argc); 
-	      for (int i=0; i<myExecManager->platformInvoke.argc; i++) reply->writeInt32((int)0); // padding for taint values		
+	      	ALOGD("dvmPlatformInvoke finished. result=%lld=%08x",
+				myExecManager->platformInvoke.pResult->j, myExecManager->platformInvoke.pResult->l);
+	    	ALOGD("wrote result, status=%d (argc=%d)",
+				reply->writeInt64(myExecManager->platformInvoke.pResult->j), myExecManager->platformInvoke.argc);
+			// padding for taint values
+	    	for (int i=0; i<myExecManager->platformInvoke.argc; i++) reply->writeInt32((int)0);		
 	    }
 		ALOGD("now freeing return data pointer");
 	    free(rawdata);
@@ -266,7 +271,7 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 		return NO_ERROR;
 	 	break;
     } default: {
-	    aout << "BnWrapper::onTransact: unknown command";
+	    ALOGE("BnWrapper::onTransact: unknown command");
             return BBinder::onTransact(code, data, reply, flags);
     }
 }
