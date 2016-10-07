@@ -410,34 +410,31 @@ static jobject AllocObject(JNIEnvMod* env, jclass jclazz) {
 	const char* sig = em->getSignatureForMethod(methodID);
 
 #define CALL_COPY_NONVIRTUAL() \
-	JNIEnvModExt* ext = (JNIEnvModExt*)env; \
-	int paramSize = 8*ext->execManager->getNumParams(methodID); \
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager; \
+	int paramSize = 8*em->getNumParams(methodID); \
 	ALOGD("paramSize=%d", paramSize); \
 	int size = sizeof(jobject) + sizeof(jclass) + sizeof(jmethodID) + sizeof(paramSize) + paramSize; \
-	void* data = malloc(size); \
-	memcpy(data, &jobj, sizeof(jobj)); \
-	void* d2 = data + sizeof(jobj); \
-	memcpy(d2, &jc, sizeof(jc)); \
-	d2 += sizeof(jc); \
-	memcpy(d2, &methodID, sizeof(methodID)); \
-	d2 += sizeof(methodID); \
-	memcpy(d2, &paramSize, sizeof(paramSize)); \
-	d2 += sizeof(paramSize); \
-	const char* sig = ext->execManager->getSignatureForMethod(methodID);
+	int taintsize = size; \
+	int* data = (int*)malloc(size); \
+	data[0] = (int)jobj; \
+	data[1] = (int)jc; \
+	data[2] = (int)methodID; \
+	data[3] = paramSize; \
+	void* d2 = (void*)&data[4]; \
+	const char* sig = em->getSignatureForMethod(methodID);
 
 #define CALL_COPY_STATIC() \
-	JNIEnvModExt* ext = (JNIEnvModExt*)env; \
-	int paramSize = 8*ext->execManager->getNumParams(methodID); \
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager; \
+	int paramSize = 8*em->getNumParams(methodID); \
 	ALOGD("paramSize=%d", paramSize); \
 	int size = sizeof(jclass) + sizeof(jmethodID) + paramSize; \
-	void* data = malloc(size); \
-	memcpy(data, &jc, sizeof(jc)); \
-	void* d2 = data + sizeof(jc); \
-	memcpy(d2, &methodID, sizeof(methodID)); \
-	d2 += sizeof(methodID); \
-	memcpy(d2, &paramSize, sizeof(paramSize)); \
-	d2 += sizeof(paramSize); \
-	const char* sig = ext->execManager->getSignatureForMethod(methodID);
+	int taintsize = size; \
+	int* data = (int*)malloc(size); \
+	data[0] = (int)jc; \
+	data[1] = (int)methodID; \
+	data[2] = paramSize; \
+	void* d2 = &data[3]; \
+	const char* sig = em->getSignatureForMethod(methodID);
 
 #define PARAMS_FROM_ARGS() \
 	int i = 0; \
@@ -1059,8 +1056,8 @@ static void CallVoidMethod(JNIEnvMod* env, jobject jobj, jmethodID methodID, ...
 
 //code 34
 static void CallVoidMethodV(JNIEnvMod* env, jobject jobj, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallVoidMethodV(env=%08x, jobject=%08x, methodID=%08x, va_list=%08x)",
-		(int)env, (int)jobj, (int)methodID, args);
+	ALOGD("jniEnvMod->CallVoidMethodV(env=%08x, jobject=%08x, methodID=%08x, va_list)",
+		(int)env, (int)jobj, (int)methodID);
 	CALL_COPY();
 	PARAMS_FROM_ARGS();
     em->jniCall.function = 34;
@@ -1094,11 +1091,12 @@ static jobject CallNonvirtualObjectMethod(JNIEnvMod* env, jobject jobj, jclass j
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 31;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jobject result = (jobject)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 31;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jobject result = *(jobject*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1109,431 +1107,467 @@ static jobject CallNonvirtualObjectMethodV(JNIEnvMod* env, jobject jobj, jclass 
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 31;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jobject result = (jobject)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 31;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jobject result = *(jobject*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 31
 static jobject CallNonvirtualObjectMethodA(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->CallNonvirtualObjectMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
+	ALOGD("jniEnvMod->CallNonvirtualObjectMethodA(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, jvalue*=%08x",
+		(int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 31;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jobject result = (jobject)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 31;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jobject result = *(jobject*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 75
 static jboolean CallNonvirtualBooleanMethod(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, ...) {
-	ALOGD("jniEnvMod->CallNonvirtualBooleanMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...",
+	ALOGD("jniEnvMod->CallNonvirtualBooleanMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	va_list args;
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 75;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 75;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jboolean result = *(jboolean*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 75
 static jboolean CallNonvirtualBooleanMethodV(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallNonvirtualBooleanMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list",
+	ALOGD("jniEnvMod->CallNonvirtualBooleanMethodV(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, va_list)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 75;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 75;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jboolean result = *(jboolean*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 75
 static jboolean CallNonvirtualBooleanMethodA(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->CallNonvirtualBooleanMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
+	ALOGD("jniEnvMod->CallNonvirtualBooleanMethodA(env=%08x, jobj=%08x, jcl=%08x, methodID=%08x, jvalue*=%08x)",
+		(int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 75;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 75;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jboolean result = *(jboolean*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 76
 static jbyte CallNonvirtualByteMethod(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, ...) {
-	ALOGD("jniEnvMod->CallNonvirtualByteMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...",
+	ALOGD("jniEnvMod->CallNonvirtualByteMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	va_list args;
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 76;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jbyte result = (jbyte)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 76;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jbyte result = *(jbyte*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 76
 static jbyte CallNonvirtualByteMethodV(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallNonvirtualByteMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list",
+	ALOGD("jniEnvMod->CallNonvirtualByteMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 76;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jbyte result = (jbyte)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 76;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jbyte result = *(jbyte*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 76
 static jbyte CallNonvirtualByteMethodA(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->CallNonvirtualByteMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
+	ALOGD("jniEnvMod->CallNonvirtualByteMethodA(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, jvalue*=%08x)",
+		(int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 76;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jbyte result = (jbyte)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 76;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jbyte result = *(jbyte*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 77
 static jchar CallNonvirtualCharMethod(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, ...) {
-	ALOGD("jniEnvMod->CallNonvirtualCharMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...",
+	ALOGD("jniEnvMod->CallNonvirtualCharMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	va_list args;
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 77;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jchar result = (jchar)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 77;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jchar result = *(jchar*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 77
 static jchar CallNonvirtualCharMethodV(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallNonvirtualCharMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list",
+	ALOGD("jniEnvMod->CallNonvirtualCharMethodV(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, va_list)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 77;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jchar result = (jchar)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 77;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jchar result = *(jchar*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 77
 static jchar CallNonvirtualCharMethodA(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->CallNonvirtualCharMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
+	ALOGD("jniEnvMod->CallNonvirtualCharMethodA(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, jvalue*=%08x)",
+		(int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 77;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jchar result = (jchar)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 77;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jchar result = *(jchar*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 78
 static jshort CallNonvirtualShortMethod(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, ...) {
-	ALOGD("jniEnvMod->CallNonvirtualShortMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...",
+	ALOGD("jniEnvMod->CallNonvirtualShortMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	va_list args;
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 78;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jshort result = (jshort)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 78;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jshort result = *(jshort*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 78
 static jshort CallNonvirtualShortMethodV(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallNonvirtualShortMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list",
+	ALOGD("jniEnvMod->CallNonvirtualShortMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 78;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jshort result = (jshort)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 78;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jshort result = *(jshort*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 78
 static jshort CallNonvirtualShortMethodA(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->CallNonvirtualShortMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
+	ALOGD("jniEnvMod->CallNonvirtualShortMethodA(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, jvalue*=%08x)",
+		(int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 78;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jshort result = (jshort)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 78;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jshort result = *(jshort*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 79
 static jint CallNonvirtualIntMethod(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, ...) {
-	ALOGD("jniEnvMod->CallNonvirtualIntMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...",
+	ALOGD("jniEnvMod->CallNonvirtualIntMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	va_list args;
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 79;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jint result = (jint)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 79;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jint result = *(jint*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 79
 static jint CallNonvirtualIntMethodV(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallNonvirtualIntMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list",
+	ALOGD("jniEnvMod->CallNonvirtualIntMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 79;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jint result = (jint)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 79;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jint result = *(jint*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 79
 static jint CallNonvirtualIntMethodA(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->CallNonvirtualIntMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
+	ALOGD("jniEnvMod->CallNonvirtualIntMethodA(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, jvalue*=%08x)",
+		(int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 79;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jint result = (jint)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 79;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jint result = *(jint*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 80
 static jlong CallNonvirtualLongMethod(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, ...) {
-	ALOGD("jniEnvMod->CallNonvirtualLongMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...",
+	ALOGD("jniEnvMod->CallNonvirtualLongMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	va_list args;
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 80;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jlong result = (jlong)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 80;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jlong result = *(jlong*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 80
 static jlong CallNonvirtualLongMethodV(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallNonvirtualLongMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list",
+	ALOGD("jniEnvMod->CallNonvirtualLongMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 80;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jlong result = (jlong)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 80;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jlong result = *(jlong*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 80
 static jlong CallNonvirtualLongMethodA(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->CallNonvirtualLongMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
+	ALOGD("jniEnvMod->CallNonvirtualLongMethodA(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, jvalue*=%08x)",
+		(int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 80;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jlong result = (jlong)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 80;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jlong result = *(jlong*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 81
 static jfloat CallNonvirtualFloatMethod(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, ...) {
-	ALOGD("jniEnvMod->CallNonvirtualFloatMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...",
+	ALOGD("jniEnvMod->CallNonvirtualFloatMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	va_list args;
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 81;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jfloat result = (jfloat)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 81;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jfloat result = *(jfloat*)(em->jniCall.param_data);
 	free(data);
 	return result;
 }
 
 //code 81
 static jfloat CallNonvirtualFloatMethodV(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallNonvirtualFloatMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list",
+	ALOGD("jniEnvMod->CallNonvirtualFloatMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 81;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jfloat result = (jfloat)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 81;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jfloat result = *(jfloat*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 81
 static jfloat CallNonvirtualFloatMethodA(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->CallNonvirtualFloatMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
+	ALOGD("jniEnvMod->CallNonvirtualFloatMethodA(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, jvalue*=%08x)",
+		(int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 81;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jfloat result = (jfloat)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 81;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jfloat result = *(jfloat*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 82
 static jdouble CallNonvirtualDoubleMethod(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, ...) {
-	ALOGD("jniEnvMod->CallNonvirtualDoubleMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...",
+	ALOGD("jniEnvMod->CallNonvirtualDoubleMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	va_list args;
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 82;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jdouble result = (jdouble)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 82;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jdouble result = *(jdouble*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 82
 static jdouble CallNonvirtualDoubleMethodV(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallNonvirtualDoubleMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list",
+	ALOGD("jniEnvMod->CallNonvirtualDoubleMethodV(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, va_list)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 82;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jdouble result = (jdouble)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 82;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jdouble result = *(jdouble*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 82
 static jdouble CallNonvirtualDoubleMethodA(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, jvalue* args) {
-	ALOGD("jniEnvMod->CallNonvirtualDoubleMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
+	ALOGD("jniEnvMod->CallNonvirtualDoubleMethodA(env=%08x, jobj=%08x, jc=%08x, methodID=%08x, jvalue*=%08x)", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 82;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jdouble result = (jdouble)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 82;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jdouble result = *(jdouble*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
 
 //code 83
 static void CallNonvirtualVoidMethod(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, ...) {
-	ALOGD("jniEnvMod->CallNonvirtualVoidMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...",
+	ALOGD("jniEnvMod->CallNonvirtualVoidMethod(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, ...)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	va_list args;
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 83;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
+    em->jniCall.function = 83;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
 	free(data);
 }
 
 //code 83
 static void CallNonvirtualVoidMethodV(JNIEnvMod* env, jobject jobj, jclass jc, jmethodID methodID, va_list args) {
-	ALOGD("jniEnvMod->CallNonvirtualVoidMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list",
+	ALOGD("jniEnvMod->CallNonvirtualVoidMethodV(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, va_list)",
 		(int)env, (int)jobj, (int)jc, (int)methodID);
 	CALL_COPY_NONVIRTUAL();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 83;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
+    em->jniCall.function = 83;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
 	free(data);
 }
 
@@ -1542,10 +1576,11 @@ static void CallNonvirtualVoidMethodA(JNIEnvMod* env, jobject jobj, jclass jc, j
 	ALOGD("jniEnvMod->CallNonvirtualVoidMethodA(env=%08x, jobject=%08x, jclass=%08x, methodID=%08x, jvalue*=%08x", (int)env, (int)jobj, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_NONVIRTUAL();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 83;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
+    em->jniCall.function = 83;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
 	free(data);
 }
 
@@ -1558,10 +1593,11 @@ static void CallStaticVoidMethod(JNIEnvMod* env, jclass jc, jmethodID methodID, 
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 52;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
+    em->jniCall.function = 52;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
 	free(data);
 }
 
@@ -1571,10 +1607,11 @@ static void CallStaticVoidMethodV(JNIEnvMod* env, jclass jc, jmethodID methodID,
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 52;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
+    em->jniCall.function = 52;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
 	free(data);
 }
 
@@ -1584,10 +1621,11 @@ static void CallStaticVoidMethodA(JNIEnvMod* env, jclass jc, jmethodID methodID,
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 52;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
+    em->jniCall.function = 52;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
 	free(data);
 }
 
@@ -1600,11 +1638,12 @@ static jobject CallStaticObjectMethod(JNIEnvMod* env, jclass jc, jmethodID metho
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 88;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jobject result = (jobject)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 88;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jobject result = *(jobject*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1615,11 +1654,12 @@ static jobject CallStaticObjectMethodV(JNIEnvMod* env, jclass jc, jmethodID meth
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 88;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jobject result = (jobject)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 88;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jobject result = *(jobject*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1630,11 +1670,12 @@ static jobject CallStaticObjectMethodA(JNIEnvMod* env, jclass jc, jmethodID meth
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 88;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jobject result = (jobject)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 88;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jobject result = *(jobject*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1648,11 +1689,12 @@ static jboolean CallStaticBooleanMethod(JNIEnvMod* env, jclass jc, jmethodID met
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 87;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 87;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jboolean result = *(jboolean*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1663,11 +1705,12 @@ static jboolean CallStaticBooleanMethodV(JNIEnvMod* env, jclass jc, jmethodID me
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 87;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 87;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jboolean result = *(jboolean*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1678,11 +1721,12 @@ static jboolean CallStaticBooleanMethodA(JNIEnvMod* env, jclass jc, jmethodID me
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 87;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 87;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jboolean result = *(jboolean*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1696,11 +1740,12 @@ static jbyte CallStaticByteMethod(JNIEnvMod* env, jclass jc, jmethodID methodID,
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 86;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jbyte result = (jbyte)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 86;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jbyte result = *(jbyte*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1711,11 +1756,12 @@ static jbyte CallStaticByteMethodV(JNIEnvMod* env, jclass jc, jmethodID methodID
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 86;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jbyte result = (jbyte)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 86;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jbyte result = *(jbyte*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1726,11 +1772,12 @@ static jbyte CallStaticByteMethodA(JNIEnvMod* env, jclass jc, jmethodID methodID
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 86;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jbyte result = (jbyte)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 86;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jbyte result = *(jbyte*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1744,11 +1791,12 @@ static jchar CallStaticCharMethod(JNIEnvMod* env, jclass jc, jmethodID methodID,
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 85;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jchar result = (jchar)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 85;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jchar result = *(jchar*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1759,11 +1807,12 @@ static jchar CallStaticCharMethodV(JNIEnvMod* env, jclass jc, jmethodID methodID
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 85;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jchar result = (jchar)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 85;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jchar result = *(jchar*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1774,11 +1823,12 @@ static jchar CallStaticCharMethodA(JNIEnvMod* env, jclass jc, jmethodID methodID
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 85;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jchar result = (jchar)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 85;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jchar result = *(jchar*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1792,11 +1842,12 @@ static jshort CallStaticShortMethod(JNIEnvMod* env, jclass jc, jmethodID methodI
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 51;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jshort result = (jshort)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 51;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jshort result = *(jshort*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1807,11 +1858,12 @@ static jshort CallStaticShortMethodV(JNIEnvMod* env, jclass jc, jmethodID method
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 51;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jshort result = (jshort)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 51;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jshort result = *(jshort*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1822,11 +1874,12 @@ static jshort CallStaticShortMethodA(JNIEnvMod* env, jclass jc, jmethodID method
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 51;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jshort result = (jshort)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 51;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jshort result = *(jshort*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1840,11 +1893,12 @@ static jint CallStaticIntMethod(JNIEnvMod* env, jclass jc, jmethodID methodID, .
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 89;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jint result = (jint)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 89;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jint result = *(jint*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1855,11 +1909,12 @@ static jint CallStaticIntMethodV(JNIEnvMod* env, jclass jc, jmethodID methodID, 
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 89;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jint result = (jint)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 89;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jint result = *(jint*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1870,11 +1925,12 @@ static jint CallStaticIntMethodA(JNIEnvMod* env, jclass jc, jmethodID methodID, 
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 89;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jint result = (jint)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 89;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jint result = *(jint*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1888,11 +1944,12 @@ static jlong CallStaticLongMethod(JNIEnvMod* env, jclass jc, jmethodID methodID,
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 90;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jlong result = (jlong)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 90;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jlong result = *(jlong*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1903,11 +1960,12 @@ static jlong CallStaticLongMethodV(JNIEnvMod* env, jclass jc, jmethodID methodID
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 90;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jlong result = (jlong)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 90;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jlong result = *(jlong*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1918,11 +1976,12 @@ static jlong CallStaticLongMethodA(JNIEnvMod* env, jclass jc, jmethodID methodID
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 90;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jlong result = (jlong)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 90;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jlong result = *(jlong*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1936,11 +1995,12 @@ static jfloat CallStaticFloatMethod(JNIEnvMod* env, jclass jc, jmethodID methodI
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 91;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jfloat result = (jfloat)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 91;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jfloat result = *(jfloat*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1951,11 +2011,12 @@ static jfloat CallStaticFloatMethodV(JNIEnvMod* env, jclass jc, jmethodID method
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 91;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jfloat result = (jfloat)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 91;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jfloat result = *(jfloat*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1966,11 +2027,12 @@ static jfloat CallStaticFloatMethodA(JNIEnvMod* env, jclass jc, jmethodID method
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 91;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jfloat result = (jfloat)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 91;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jfloat result = *(jfloat*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1984,11 +2046,12 @@ static jdouble CallStaticDoubleMethod(JNIEnvMod* env, jclass jc, jmethodID metho
 	va_start(args, methodID);
 	PARAMS_FROM_ARGS();
 	va_end(args);	
-    ext->execManager->jniCall.function = 91;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jdouble result = (jdouble)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 91;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jdouble result = *(jdouble*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -1999,11 +2062,12 @@ static jdouble CallStaticDoubleMethodV(JNIEnvMod* env, jclass jc, jmethodID meth
 		(int)env, (int)jc, (int)methodID);
 	CALL_COPY_STATIC();
 	PARAMS_FROM_ARGS();
-    ext->execManager->jniCall.function = 91;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jdouble result = (jdouble)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 91;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jdouble result = *(jdouble*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -2014,11 +2078,12 @@ static jdouble CallStaticDoubleMethodA(JNIEnvMod* env, jclass jc, jmethodID meth
 		(int)env, (int)jc, (int)methodID, (int)args);
 	CALL_COPY_STATIC();
 	memcpy(d2, args, paramSize);
-    ext->execManager->jniCall.function = 91;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jdouble result = (jdouble)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 91;
+    em->jniCall.taintsize = taintsize;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jdouble result = *(jdouble*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
