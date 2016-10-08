@@ -5,7 +5,7 @@
 #define LOG_TAG "BnWrapper=Server"
 
 #ifndef FLOWCOASTER_DEBUG
-	#define ALOGD(...) void();
+	#define ALOGD(...) { int xyz=0; }
 #endif
 
 namespace android {

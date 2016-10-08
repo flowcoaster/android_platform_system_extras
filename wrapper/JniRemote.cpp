@@ -442,26 +442,16 @@ static jobject AllocObject(JNIEnvMod* env, jclass jclazz) {
 	while (sig[i] != ')') { \
 		switch (sig[i]) { \
 			case '(': break; \
-			case 'L': { \
-				v.l = va_arg(args, jobject); \
-				memcpy(d2, &v, sizeof(v)); \
-				ALOGD("copying jobject %08x", (int)v.l); \
-				d2 += sizeof(v); \
-				break; } \
-			case 'Z': { \
-				v.z = va_arg(args, jboolean); \
-				memcpy(d2, &v, sizeof(v)); \
-				ALOGD("copying jboolean %08x", (int)v.z); \
-				d2 += sizeof(v); \
-				break; } \
+			case 'L': \
+			case 'Z': \
 			case 'B': \
 			case 'C': \
 			case 'S': \
 			case 'I': { \
 				v.i = va_arg(args, jint); \
 				memcpy(d2, &v, sizeof(v)); \
-				ALOGD("copying jint %d", v.i); \
-				d2 += sizeof(v); \
+				ALOGD("copying 32 bit value %08x", v.i); \
+				d2 += sizeof(v.i); \
 				break; } \
 			case 'D': \
 			case 'J': { \
@@ -2091,317 +2081,220 @@ static jdouble CallStaticDoubleMethodA(JNIEnvMod* env, jclass jc, jmethodID meth
 //code 15
 static jfieldID GetFieldID(JNIEnvMod* env, jclass jclazz, const char* name, const char* sig) {
 	ALOGD("jniEnvMod->GetFieldID(env=%08x, jclazz=%08x, name=%s, sig=%s)", (int)env, (int)jclazz, name, sig);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	int size = sizeof(jclazz) + sizeof(char)*(strlen(name)+1) + sizeof(char)*(strlen(sig)+1);
-	void* data = malloc(size);
-	memcpy(data, &jclazz, sizeof(jclazz));
-	void* d2 = data+sizeof(jclazz);
+	int* data = (int*)malloc(size);
+	data[0] = (int)jclazz;
+	void* d2 = &data[1];
 	memcpy(d2, name, sizeof(char)*(strlen(name)+1));
 	d2 += sizeof(char)*(strlen(name)+1);
 	memcpy(d2, sig, sizeof(char)*(strlen(sig)+1));
-    ext->execManager->jniCall.function = 15;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jfieldID result = (jfieldID)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 15;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jfieldID result = *(jfieldID*)em->jniCall.param_data;
 	return result;
 }
+
+#define GETFIELD_COPYDATA() \
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager; \
+	int size = sizeof(jobj) + sizeof(fieldID); \
+	int* data = (int*)malloc(size); \
+	data[0] = (int)jobj; \
+	data[1] = (int)fieldID; \
+    em->jniCall.length = size; \
+    em->jniCall.param_data = data; \
+    em->jniCall.taintsize = 0;
 
 //code 44
 static jobject GetObjectField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 	ALOGD("jniEnvMod->GetObjectField(env=%08x, jobj=%08x, fieldID=%08x)", (int)env, (int)jobj, (int)fieldID);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 44;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
-	jobject result = (jobject)*(int*)(ext->execManager->jniCall.param_data);;
+	GETFIELD_COPYDATA();
+    em->jniCall.function = 44;
+    em->reqJniCall();
+	jobject result = *(jobject*)em->jniCall.param_data;
 	return result;
 }
 
 //code 45
 static jboolean GetBooleanField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 	ALOGD("jniEnvMod->GetBooleanField(env=%08x, jobj=%08x, fieldID=%08x)", (int)env, (int)jobj, (int)fieldID);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 45;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
-	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);;
+	GETFIELD_COPYDATA();
+    em->jniCall.function = 45;
+    em->reqJniCall();
+	jboolean result = *(jboolean*)em->jniCall.param_data;
 	return result;
 }
 
 //code 46
 static jbyte GetByteField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 	ALOGD("jniEnvMod->GetByteField(env=%08x, jobj=%08x, fieldID=%08x)", (int)env, (int)jobj, (int)fieldID);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 46;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
-	jbyte result = (jbyte)*(int*)(ext->execManager->jniCall.param_data);;
+	GETFIELD_COPYDATA();
+    em->jniCall.function = 46;
+    em->reqJniCall();
+	jbyte result = *(jbyte*)em->jniCall.param_data;
 	return result;
 }
 
 //code 47
 static jchar GetCharField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 	ALOGD("jniEnvMod->GetShortField(env=%08x, jobj=%08x, fieldID=%08x)", (int)env, (int)jobj, (int)fieldID);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 47;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
-	jchar result = (jchar)*(int*)(ext->execManager->jniCall.param_data);;
+	GETFIELD_COPYDATA();
+    em->jniCall.function = 47;
+    em->reqJniCall();
+	jchar result = *(jchar*)em->jniCall.param_data;
 	return result;
 }
 
 //code 48
 static jshort GetShortField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 	ALOGD("jniEnvMod->GetShortField(env=%08x, jobj=%08x, fieldID=%08x)", (int)env, (int)jobj, (int)fieldID);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 48;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
-	jshort result = (jshort)*(int*)(ext->execManager->jniCall.param_data);;
+	GETFIELD_COPYDATA();
+    em->jniCall.function = 48;
+    em->reqJniCall();
+	jshort result = *(jshort*)em->jniCall.param_data;
 	return result;
 }
 
 //code 30
 static jint GetIntField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 	ALOGD("jniEnvMod->GetIntField(env=%08x, jobj=%08x, fieldID=%08x)", (int)env, (int)jobj, (int)fieldID);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 30;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
-	jint result = (jint)*(int*)(ext->execManager->jniCall.param_data);;
+	GETFIELD_COPYDATA();
+    em->jniCall.function = 30;
+    em->reqJniCall();
+	jint result = *(jint*)em->jniCall.param_data;
 	return result;
 }
 
 //code 17
 static jlong GetLongField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 	ALOGD("jniEnvMod->GetLongField(env=%08x, jobj=%08x, fieldID=%08x)", (int)env, (int)jobj, (int)fieldID);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 17;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
-	jlong result = (jlong)*(int*)(ext->execManager->jniCall.param_data);;
+	GETFIELD_COPYDATA();
+    em->jniCall.function = 17;
+    em->reqJniCall();
+	jlong result = *(jlong*)em->jniCall.param_data;
 	return result;
 }
 
 //code 49
 static jfloat GetFloatField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 	ALOGD("jniEnvMod->GetFloatField(env=%08x, jobj=%08x, fieldID=%08x)", (int)env, (int)jobj, (int)fieldID);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 49;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
-	jfloat result = (jfloat)*(int*)(ext->execManager->jniCall.param_data);;
+	GETFIELD_COPYDATA();
+    em->jniCall.function = 49;
+    em->reqJniCall();
+	jfloat result = *(jfloat*)em->jniCall.param_data;
 	return result;
 }
 
 //code 50
 static jdouble GetDoubleField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 	ALOGD("jniEnvMod->GetDoubleField(env=%08x, jobj=%08x, fieldID=%08x)", (int)env, (int)jobj, (int)fieldID);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-    ext->execManager->jniCall.function = 50;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-    ext->execManager->reqJniCall();
-	jdouble result = (jdouble)*(int*)(ext->execManager->jniCall.param_data);;
+	GETFIELD_COPYDATA();
+    em->jniCall.function = 50;
+    em->reqJniCall();
+	jdouble result = *(jdouble*)em->jniCall.param_data;
 	return result;
 }
 
+#define SETFIELD_COPYDATA() \
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager; \
+	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val); \
+	int* data = (int*)malloc(size); \
+	data[0] = (int)val; \
+	data[1] = (int)fieldID; \
+	data[2] = (int)jobj; \
+    em->jniCall.length = size; \
+    em->jniCall.param_data = data; \
+    em->jniCall.taintsize = sizeof(u4);
+
+#define SETFIELD_COPYDATAL() \
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager; \
+	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val); \
+	int* data = (int*)malloc(size); \
+	jlong* ldata = (jlong*)data; \
+	ldata[0] = (jlong)val; \
+	data[2] = (int)fieldID; \
+	data[3] = (int)jobj; \
+    em->jniCall.length = size; \
+    em->jniCall.param_data = data; \
+    em->jniCall.taintsize = sizeof(u4);
+
 //code 43
 static void SetObjectField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jobject val) {
-	ALOGD("jniEnvMod->SetIntField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jobj, (int)fieldID, (int)val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jobj)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 43;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 2*sizeof(u4);
-    ext->execManager->reqJniCall();
+	ALOGD("jniEnvMod->SetObjectField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)",
+		(int)env, (int)jobj, (int)fieldID, (int)val);
+	SETFIELD_COPYDATA();
+    em->jniCall.function = 43;
+    em->reqJniCall();
 }
 
 //code 42
 static void SetBooleanField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jboolean val) {
-	ALOGD("jniEnvMod->SetIntField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jobj, (int)fieldID, val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jobj)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 42;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 2*sizeof(u4);
-    ext->execManager->reqJniCall();
+	ALOGD("jniEnvMod->SetBooleanField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)",
+		(int)env, (int)jobj, (int)fieldID, val);
+	SETFIELD_COPYDATA();
+    em->jniCall.function = 42;
+    em->reqJniCall();
 }
 
 //code 41
 static void SetByteField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jbyte val) {
-	ALOGD("jniEnvMod->SetIntField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jobj, (int)fieldID, val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jobj)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 41;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 2*sizeof(u4);
-    ext->execManager->reqJniCall();
+	ALOGD("jniEnvMod->SetByteField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)",
+		(int)env, (int)jobj, (int)fieldID, val);
+	SETFIELD_COPYDATA();
+    em->jniCall.function = 41;
+    em->reqJniCall();
 }
 
 //code 40
 static void SetCharField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jchar val) {
-	ALOGD("jniEnvMod->SetIntField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jobj, (int)fieldID, val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jobj)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 40;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 2*sizeof(u4);
-    ext->execManager->reqJniCall();
+	ALOGD("jniEnvMod->SetCharField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)",
+		(int)env, (int)jobj, (int)fieldID, val);
+	SETFIELD_COPYDATA();
+    em->jniCall.function = 40;
+    em->reqJniCall();
 }
 
 //code 39
 static void SetShortField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jshort val) {
 	ALOGD("jniEnvMod->SetIntField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jobj, (int)fieldID, val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jobj)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 39;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 2*sizeof(u4);
-    ext->execManager->reqJniCall();
+	SETFIELD_COPYDATA();
+    em->jniCall.function = 39;
+    em->reqJniCall();
 }
 
 //code 35
 static void SetIntField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jint val) {
 	ALOGD("jniEnvMod->SetIntField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jobj, (int)fieldID, val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jobj)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 35;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 2*sizeof(u4);
-    ext->execManager->reqJniCall();
+	SETFIELD_COPYDATA();
+    em->jniCall.function = 35;
+    em->reqJniCall();
 }
 
 //code 36
 static void SetLongField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jlong val) {
 	ALOGD("jniEnvMod->SetIntField(env=%08x, jobj=%08x, fieldID=%08x, val=%08x)", (int)env, (int)jobj, (int)fieldID, (int)val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(jlong);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jobj)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 36;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 2*sizeof(u4);
-    ext->execManager->reqJniCall();
+	SETFIELD_COPYDATAL();
+    em->jniCall.function = 36;
+    em->reqJniCall();
 }
 
 //code 38
 static void SetFloatField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jfloat val) {
 	ALOGD("jniEnvMod->SetIntField(env=%08x, jobj=%08x, fieldID=%08x, val=%f)", (int)env, (int)jobj, (int)fieldID, val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jobj)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 38;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 2*sizeof(u4);
-    ext->execManager->reqJniCall();
+	SETFIELD_COPYDATA();
+    em->jniCall.function = 38;
+    em->reqJniCall();
 }
 
 //code 37
 static void SetDoubleField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jdouble val) {
 	ALOGD("jniEnvMod->SetIntField(env=%08x, jobj=%08x, fieldID=%08x, val=%f)", (int)env, (int)jobj, (int)fieldID, val);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(jlong);
-	void* data = malloc(size);
-	memcpy(data, &jobj, sizeof(jobj));
-	memcpy(data+sizeof(jobj), &fieldID, sizeof(fieldID));
-	memcpy(data+sizeof(jobj)+sizeof(fieldID), &val, sizeof(val));
-    ext->execManager->jniCall.function = 37;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 2*sizeof(u4);
-    ext->execManager->reqJniCall();
+	SETFIELD_COPYDATAL();
+    em->jniCall.function = 37;
+    em->reqJniCall();
 }
 
 //code 16

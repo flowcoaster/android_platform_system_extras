@@ -203,167 +203,130 @@ namespace android{
 		ALOGD("GetMethodID()->%08x", (int)result);
 	}
 
+#define UNPACK_GETFIELD() \
+		jobject* jdata = (jobject*)replydata; \
+		jobject jobj = jdata[0]; \
+		jfieldID fieldID = (jfieldID)jdata[1]; \
+		u4 taint = 0;
+
+#define WRITEOUT_GETFIELD() \
+		size = sizeof(result) + sizeof(taint); \
+		callbackdata = malloc(size); \
+		taintsize = sizeof(taint); \
+		int* rdata = (int*)callbackdata; \
+		rdata[0] = (int)result; \
+		rdata[1] = taint; 
+
 	//with taint support
 	void BpWrapper::callGetObjectField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		u4 taint = 0;
+		UNPACK_GETFIELD();
 		jobject result = jniEnv->GetObjectTaintedField(jobj, fieldID, &taint);
-		taintsize = sizeof(taint);
-		size = sizeof(result) + taintsize;
-		callbackdata = malloc(size);
-		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, taintsize);
+		WRITEOUT_GETFIELD();
 		ALOGD("GetObjectField()->%08x", (int)result);
 	}
 
 	//with taint support
 	void BpWrapper::callGetBooleanField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		u4 taint = 0;
+		UNPACK_GETFIELD();
 		ALOGD("call GetBooleanTaintedField(jobj=%08x, fieldID=%08x, taint=0)", (int)jobj, (int)fieldID);
 		jboolean result = jniEnv->GetBooleanTaintedField(jobj, fieldID, &taint);
-		/* ALOGD("call GetBooleanField(jobj=%08x, fieldID=%08x)", (int)jobj, (int)fieldID);
-           jboolean result = jniEnv->GetBooleanField(jobj, fieldID);*/
-		size = sizeof(result) + sizeof(taint);
-		callbackdata = malloc(size);
-		taintsize = sizeof(taint);
-		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+		WRITEOUT_GETFIELD();
 		ALOGD("GetBooleanField()->%08x", (int)result);
 	}
 
 	//with taint support
 	void BpWrapper::callGetByteField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		u4 taint = 0;
+		UNPACK_GETFIELD();
 		jbyte result = jniEnv->GetByteTaintedField(jobj, fieldID, &taint);
-		size = sizeof(result) + sizeof(taint);
-		callbackdata = malloc(size);
-		taintsize = sizeof(taint);
-		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+		WRITEOUT_GETFIELD();
 		ALOGD("GetByteField()->%08x", (int)result);
 	}
 
 	//with taint support
 	void BpWrapper::callGetCharField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		u4 taint = 0;
+		UNPACK_GETFIELD();
 		jchar result = jniEnv->GetCharTaintedField(jobj, fieldID, &taint);
-		size = sizeof(result) + sizeof(taint);
-		callbackdata = malloc(size);
-		taintsize = sizeof(taint);
-		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+		WRITEOUT_GETFIELD();
 		ALOGD("GetCharField()->%c", result);
 	}
 
 	//with taint support
 	void BpWrapper::callGetShortField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		u4 taint = 0;
+		UNPACK_GETFIELD();
 		jshort result = jniEnv->GetShortTaintedField(jobj, fieldID, &taint);
-		size = sizeof(result) + sizeof(taint);
-		callbackdata = malloc(size);
-		taintsize = sizeof(taint);
-		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+		WRITEOUT_GETFIELD();
 		ALOGD("GetShortField()->%08x", (int)result);
 	}
 
 	//with taint support
 	void BpWrapper::callGetIntField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		u4 taint = 0;
+		UNPACK_GETFIELD();
 		jint result = jniEnv->GetIntTaintedField(jobj, fieldID, &taint);
-		size = sizeof(result) + sizeof(taint);
-		callbackdata = malloc(size);
-		taintsize = sizeof(taint);
-		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+		WRITEOUT_GETFIELD();
 		ALOGD("GetIntField()->%08x", (int)result);
 	}
 
 	//with taint support
 	void BpWrapper::callGetLongField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		u4 taint = 0;
+		UNPACK_GETFIELD();
 		jlong result = jniEnv->GetLongTaintedField(jobj, fieldID, &taint);
 		size = sizeof(result) + sizeof(taint);
 		callbackdata = malloc(size);
 		taintsize = sizeof(taint);
-		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+		jlong* rdata = (jlong*)callbackdata;
+		rdata[0] = result;
+		rdata[1] = taint;
 		ALOGD("GetLongField()->%08x", (int)result);
 	}
 
 	//with taint support
 	void BpWrapper::callGetFloatField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		u4 taint = 0;
+		UNPACK_GETFIELD();
 		jfloat result = jniEnv->GetFloatTaintedField(jobj, fieldID, &taint);
-		size = sizeof(result) + sizeof(taint);
-		callbackdata = malloc(size);
-		taintsize = sizeof(taint);
-		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+		WRITEOUT_GETFIELD();
 		ALOGD("GetFloatField()->%f", result);
 	}
 
 	//with taint support
 	void BpWrapper::callGetDoubleField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		u4 taint = 0;
+		UNPACK_GETFIELD();
 		jdouble result = jniEnv->GetDoubleTaintedField(jobj, fieldID, &taint);
 		size = sizeof(result) + sizeof(taint);
 		callbackdata = malloc(size);
 		taintsize = sizeof(taint);
-		memcpy(callbackdata, &result, sizeof(result));
-		memcpy((callbackdata+sizeof(result)), &taint, sizeof(taint));
+		jdouble* rdata = (jdouble*)callbackdata;
+		rdata[0] = result;
+		rdata[1] = taint;
 		ALOGD("GetDoubleField()->%f", result);
 	}
 
+#define UNPACK_SETFIELD() \
+	int* idata = (int*)replydata; \
+	jfieldID fieldID = (jfieldID)idata[1]; \
+	jobject jobj = (jobject)idata[2]; \
+	u4 taint = idata[3];
+	
+#define UNPACK_SETFIELDL() \
+	int* idata = (int*)replydata; \
+	jlong* ldata = (jlong*)replydata; \
+	jfieldID fieldID = (jfieldID)idata[2]; \
+	jobject jobj = (jobject)idata[3]; \
+	u4 taint = idata[4];
+	
 	//with taint support
 	void BpWrapper::callSetObjectField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jobject value = *((jobject*)r2);
-		r2 += sizeof(value);
-		u4 taint = *((u4*)r2);
+		UNPACK_SETFIELD();
+		jobject value = (jobject)idata[0];
 		ALOGD("SetObjectTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, (int)value, taint);
 		jniEnv->SetObjectTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
+	//with taint support
 	void BpWrapper::callSetBooleanField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jboolean value = *((jboolean*)r2);
-		r2 += sizeof(value);
-		u4 taint = *((u4*)r2);
+		UNPACK_SETFIELD();
+		jboolean value = (jboolean)idata[0];
 		ALOGD("SetBooleanTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetBooleanTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
@@ -371,13 +334,8 @@ namespace android{
 	}
 
 	void BpWrapper::callSetByteField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jbyte value = *((jbyte*)r2);
-		r2 += sizeof(value);
-		u4 taint = *((u4*)r2);
+		UNPACK_SETFIELD();
+		jbyte value = (jbyte)idata[0];
 		ALOGD("SetByteTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetByteTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
@@ -385,13 +343,8 @@ namespace android{
 	}
 
 	void BpWrapper::callSetCharField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jchar value = *((jchar*)r2);
-		r2 += sizeof(value);
-		u4 taint = *((u4*)r2);
+		UNPACK_SETFIELD();
+		jchar value = (jchar)idata[0];
 		ALOGD("SetCharTaintedField: Field %08x to %c with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetCharTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
@@ -399,13 +352,8 @@ namespace android{
 	}
 
 	void BpWrapper::callSetShortField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jshort value = *((jshort*)r2);
-		r2 += sizeof(value);
-		u4 taint = *((u4*)r2);
+		UNPACK_SETFIELD();
+		jshort value = (jshort)idata[0];
 		ALOGD("SetShortTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetShortTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
@@ -413,13 +361,8 @@ namespace android{
 	}
 
 	void BpWrapper::callSetIntField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jint value = *((jint*)r2);
-		r2 += sizeof(value);
-		u4 taint = *((u4*)r2);
+		UNPACK_SETFIELD();
+		jint value = (jint)idata[0];
 		ALOGD("SetIntTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetIntTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
@@ -427,13 +370,8 @@ namespace android{
 	}
 
 	void BpWrapper::callSetLongField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jlong value = *((jlong*)r2);
-		r2 += sizeof(value);
-		u4 taint = *((u4*)r2);
+		UNPACK_SETFIELDL();
+		jlong value = ldata[0];
 		ALOGD("SetLongTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, (int)value, taint);
 		jniEnv->SetLongTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
@@ -441,13 +379,8 @@ namespace android{
 	}
 
 	void BpWrapper::callSetFloatField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jfloat value = *((jfloat*)r2);
-		r2 += sizeof(value);
-		u4 taint = *((u4*)r2);
+		UNPACK_SETFIELD();
+		jfloat value = (jfloat)idata[0];
 		ALOGD("SetFloatTaintedField: Field %08x to %f with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetFloatTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
@@ -455,13 +388,8 @@ namespace android{
 	}
 
 	void BpWrapper::callSetDoubleField() {
-		jobject jobj = *((jobject*)replydata);
-		void* r2 = replydata+sizeof(jobj);
-		jfieldID fieldID = *((jfieldID*)r2);
-		r2 += sizeof(fieldID);
-		jdouble value = *((jdouble*)r2);
-		r2 += sizeof(value);
-		u4 taint = *((u4*)r2);
+		UNPACK_SETFIELDL();
+		jdouble value = (jdouble)ldata[0];
 		ALOGD("SetDoubleTaintedField: Field %08x to %f with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetDoubleTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
