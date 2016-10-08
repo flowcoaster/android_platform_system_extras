@@ -449,9 +449,9 @@ static jobject AllocObject(JNIEnvMod* env, jclass jclazz) {
 			case 'S': \
 			case 'I': { \
 				v.i = va_arg(args, jint); \
-				memcpy(d2, &v, sizeof(v)); \
+				memcpy(d2, &v, sizeof(v.i)); \
 				ALOGD("copying 32 bit value %08x", v.i); \
-				d2 += sizeof(v.i); \
+				d2 += sizeof(v); \
 				break; } \
 			case 'D': \
 			case 'J': { \
