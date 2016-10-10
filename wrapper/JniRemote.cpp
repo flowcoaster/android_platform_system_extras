@@ -394,7 +394,8 @@ static jobject AllocObject(JNIEnvMod* env, jclass jclazz) {
 	int* data = (int*)malloc(size+taintsize); \
 	data[0] = (int)jobj; \
 	data[1] = (int)methodID; \
-	void* d2 = (void*)&data[2]; \
+	data[2] = paramSize; \
+	void* d2 = &data[3]; \
 	const char* sig = em->getSignatureForMethod(methodID); \
 
 #define NEW_COPY() \

@@ -563,10 +563,11 @@ namespace android{
 		jobject jobj = (jobject)data[0]; \
 		jmethodID methodID = (jmethodID)data[1]; \
 		int paramSize = data[2]; \
+		ALOGD("paramSize = %08x", paramSize); \
 		jvalue* args = (jvalue*)&data[3]; \
 		void* vargs = (void*)args; \
-		u4 objTaint = *((u4*)(args+paramSize)); \
-		u4* paramTaints = (u4*)(args+paramSize+3*sizeof(int)); \
+		u4 objTaint = *((u4*)(vargs+paramSize)); \
+		u4* paramTaints = (u4*)(vargs+paramSize+3*sizeof(int)); \
 		u4 resultTaint = 0;
 
 #define WRITE_CALLRESULT() \
@@ -694,8 +695,6 @@ namespace android{
 	//with taint support
 	void BpWrapper::callCallVoidMethod() {
 		UNPACK_CALLMETHOD();
-		ALOGD("calling VoidTaintedMethodA(jobj=%08x, objTaint=%08x, methodID=%08x, resultTaint=0, args=%08x, paramTaints=%08x)",
-			(int)jobj, objTaint, (int)methodID, (int)args, (int)paramTaints);
 		jniEnv->CallVoidTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
 		//jniEnv->CallVoidMethodA(jobj, methodID, args);
 		size = 0;
