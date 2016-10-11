@@ -389,8 +389,8 @@ static jobject AllocObject(JNIEnvMod* env, jclass jclazz) {
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager; \
 	int paramSize = 8*em->getNumParams(methodID); \
 	ALOGD("paramSize=%d", paramSize); \
-	int size = sizeof(jobject) + sizeof(jmethodID) + paramSize; \
-	int taintsize = paramSize+sizeof(jobject)+sizeof(methodID); \
+	int size = sizeof(jobject) + sizeof(jmethodID) + sizeof(paramSize) + paramSize; \
+	int taintsize = size; \
 	int* data = (int*)malloc(size+taintsize); \
 	data[0] = (int)jobj; \
 	data[1] = (int)methodID; \
@@ -451,6 +451,10 @@ static jobject AllocObject(JNIEnvMod* env, jclass jclazz) {
 			case 'I': { \
 				v.i = va_arg(args, jint); \
 				memcpy(d2, &v, sizeof(v.i)); \
+				memset(d2+4, 0, 4); \
+				int* id2 = (int*)d2; \
+				ALOGD("id2[0]=%08x", id2[0]); \
+				ALOGD("id2[1]=%08x", id2[1]); \
 				ALOGD("copying 32 bit value %08x", v.i); \
 				d2 += sizeof(v); \
 				break; } \
@@ -458,6 +462,9 @@ static jobject AllocObject(JNIEnvMod* env, jclass jclazz) {
 			case 'J': { \
 				v.j = va_arg(args, jlong); \
 				memcpy(d2, &v, sizeof(v)); \
+				int* id2 = (int*)d2; \
+				ALOGD("id2[0]=%08x", id2[0]); \
+				ALOGD("id2[1]=%08x", id2[1]); \
 				ALOGD("copying jdouble/jlong %f/%lld", v.d, v.j); \
 				d2 += sizeof(v); \
 				break; } \
@@ -2300,21 +2307,23 @@ static void SetDoubleField(JNIEnvMod* env, jobject jobj, jfieldID fieldID, jdoub
 
 //code 16
 static jmethodID GetStaticMethodID(JNIEnvMod* env, jclass jclazz, const char* name, const char* sig) {
-	ALOGD("jniEnvMod->GetStaticMethodID(env=%08x, jclazz=%08x, name=%s, sig=%s)", (int)env, (int)jclazz, name, sig);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	ALOGD("jniEnvMod->GetStaticMethodID(env=%08x, jclazz=%08x, name=%s, sig=%s)",
+		(int)env, (int)jclazz, name, sig);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	int size = sizeof(jclazz) + sizeof(char)*(strlen(name)+1) + sizeof(char)*(strlen(sig)+1);
-	void* data = malloc(size);
-	memcpy(data, &jclazz, sizeof(jclazz));
-	void* d2 = data+sizeof(jclazz);
+	int* data = (int*)malloc(size);
+	data[0] = (int)jclazz;
+	void* d2 = (void*)&data[1];
 	memcpy(d2, name, sizeof(char)*(strlen(name)+1));
 	d2 += sizeof(char)*(strlen(name)+1);
 	memcpy(d2, sig, sizeof(char)*(strlen(sig)+1));
-    ext->execManager->jniCall.function = 16;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	jmethodID result = (jmethodID)*(int*)(ext->execManager->jniCall.param_data);;
-	if (result != 0) ext->execManager->addSignatureForMethod(result, sig);
+    em->jniCall.function = 16;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
+	jmethodID result = *(jmethodID*)em->jniCall.param_data;
+	if (result != 0) em->addSignatureForMethod(result, sig);
 	return result;
 }
 
@@ -2324,13 +2333,14 @@ static jfieldID GetStaticFieldID(JNIEnvMod* env, jclass jclazz, const char* name
 		(int)env, (int)jclazz, name, sig);
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	int size = sizeof(jclazz) + sizeof(char)*(strlen(name)+1) + sizeof(char)*(strlen(sig)+1);
-	void* data = malloc(size);
-	memcpy(data, &jclazz, sizeof(jclazz));
-	void* d2 = data+sizeof(jclazz);
+	int* data = (int*)malloc(size);
+	data[0] = (int)jclazz;
+	void* d2 = (void*)&data[1];
 	memcpy(d2, name, sizeof(char)*(strlen(name)+1));
 	d2 += sizeof(char)*(strlen(name)+1);
 	memcpy(d2, sig, sizeof(char)*(strlen(sig)+1));
     em->jniCall.function = 134;
+    em->jniCall.taintsize = 0;
     em->jniCall.length = size;
     em->jniCall.param_data = data;
     em->reqJniCall();
@@ -2341,9 +2351,9 @@ static jfieldID GetStaticFieldID(JNIEnvMod* env, jclass jclazz, const char* name
 #define GETSTATIC_COPYDATA() \
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager; \
 	int size = sizeof(jclazz) + sizeof(jfieldID); \
-	void* data = malloc(size); \
-	memcpy(data, &jclazz, sizeof(jclazz)); \
-	memcpy(data+sizeof(jclazz), &fieldID, sizeof(fieldID)); \
+	int* data = (int*)malloc(size); \
+	data[0] = (int)jclazz; \
+	data[1] = (int)fieldID; \
 	
 //code 135
 static jint GetStaticIntField(JNIEnvMod* env, jclass jclazz, jfieldID fieldID) {
@@ -2610,28 +2620,19 @@ static jsize GetStringLength(JNIEnvMod* env, jstring jstr) {
 static const jchar* GetStringChars(JNIEnvMod* env, jstring jstr, jboolean* isCopy) {
 	ALOGD("jniEnvMod->GetStringChars(env=%08x, jstr=%08x, isCopy=%08x)",
 		(int)env, (int)jstr, (int)isCopy);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jstr) + sizeof(jboolean);
-	void* data = malloc(size);
-	memcpy(data, &jstr, sizeof(jstr));
-	if (isCopy != 0) {
-		memcpy(data+sizeof(jstr), isCopy, sizeof(jboolean));
-	} else {
-		jboolean b = 0;
-		memcpy(data+sizeof(jstr), &b, sizeof(jboolean));
-	}
-    ext->execManager->jniCall.function = 55;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	const void* r = ext->execManager->jniCall.param_data;
-	int dalvikP = *((int*)r);
-	r += sizeof(jchar*);
-	int strlen = *((int*)r);
-	r += sizeof(int);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 55;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = sizeof(jstr);
+    em->jniCall.param_data = &jstr;
+    em->reqJniCall();
+	int* r = (int*)em->jniCall.param_data;
+	int dalvikP = r[0];
+	int strlen = r[1];
 	jchar* result = (jchar*)malloc(strlen*sizeof(jchar)+1);
-	memcpy(result, r, strlen*sizeof(jchar));
-	ext->execManager->addStringChars(dalvikP, strlen, result);
+	memcpy(result, &r[2], strlen*sizeof(jchar));
+	em->addStringChars(dalvikP, strlen, result);
+    if (isCopy != NULL) *isCopy = JNI_FALSE;
 	ALOGD("GetStringChars: %08x -> %s", *result, (char*)result);
 	return (const jchar*)result;
 }

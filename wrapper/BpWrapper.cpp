@@ -695,8 +695,12 @@ namespace android{
 	//with taint support
 	void BpWrapper::callCallVoidMethod() {
 		UNPACK_CALLMETHOD();
+		/*ALOGD("jvalue[0]=%08x / %lld", args[0].i, args[0].j);
+		ALOGD("jvalue[1]=%08x / %lld", args[1].i, args[1].j);
+		ALOGD("jvalue[2]=%08x / %lld", args[2].i, args[2].j);
+		int* iargs = (int*)args;
+		for (int i=0; i<7; i++) ALOGD("iargs[i]=%08x", iargs[i]);*/
 		jniEnv->CallVoidTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
-		//jniEnv->CallVoidMethodA(jobj, methodID, args);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
@@ -1052,20 +1056,18 @@ namespace android{
 	}
 
 	void BpWrapper::callGetStringChars() {
-		jstring jstr = *((jstring*)replydata);
+		jstring jstr = *(jstring*)replydata;
 		ALOGD("GetStringChars: jstr=%08x", (int)jstr);
-		jboolean isCopy = *((jboolean*)(replydata+sizeof(jstr)));
-		ALOGD("GetStringChars: isCopy=%08x", isCopy);
-		const jchar* result = jniEnv->GetStringChars(jstr, &isCopy);
-		//ALOGD("GetStringChars: %08x -> %s", result, *result);
+		const jchar* result = jniEnv->GetStringChars(jstr, 0);
 		ALOGD("GetStringChars: %08x", (int)result);
 		int strlen = jniEnv->GetStringLength(jstr);
 		size = sizeof(jchar*)+sizeof(int)+strlen*sizeof(jchar);
 		taintsize = 0;
 		callbackdata = malloc(size);
-		memcpy(callbackdata, &result, sizeof(jchar*));
-		memcpy(callbackdata+sizeof(jchar*), &strlen, sizeof(jchar*));
-		memcpy(callbackdata+sizeof(jchar*)+sizeof(strlen), result, size);
+		int* idata = (int*)callbackdata;
+		idata[0] = (int)result;
+		idata[1] = strlen;
+		memcpy(&idata[2], result, size);
 	}
 
 	void BpWrapper::callReleaseStringChars() {

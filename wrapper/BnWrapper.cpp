@@ -239,12 +239,16 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    	reply->writeInt32(myExecManager->jniCall.function);
 	    	reply->writeInt32(myExecManager->jniCall.length);
 	    	reply->writeInt32(myExecManager->jniCall.taintsize);
+			ALOGD("writing out raw data:");
+			/*int* iparam_data = (int*)myExecManager->jniCall.param_data;
+			for (int ii=0; 4*ii<=myExecManager->jniCall.length; ii++)
+				ALOGD("param_data[%d]=%08x", ii, iparam_data[ii]);*/
 	    	//reply->write(myExecManager->jniCall.taint_data, myExecManager->jniCall.taintsize);
 	    	reply->write(myExecManager->jniCall.param_data, myExecManager->jniCall.length);
 			for (int i=0; i<myExecManager->jniCall.taintsize; i++) reply->writeInt32(0); //placeholder for taint values
 	    } else if (status == ExecutionManager::FINISHED) {
 	      	ALOGD("dvmPlatformInvoke finished. result=%lld=%08x",
-				myExecManager->platformInvoke.pResult->j, myExecManager->platformInvoke.pResult->l);
+				myExecManager->platformInvoke.pResult->j, myExecManager->platformInvoke.pResult->i);
 	    	ALOGD("wrote result, status=%d (argc=%d)",
 				reply->writeInt64(myExecManager->platformInvoke.pResult->j), myExecManager->platformInvoke.argc);
 			// padding for taint values
