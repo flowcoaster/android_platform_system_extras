@@ -2641,8 +2641,8 @@ static const jchar* GetStringChars(JNIEnvMod* env, jstring jstr, jboolean* isCop
 void ReleaseStringChars(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 	ALOGD("jniEnvMod->ReleaseStringChars(env=%08x, jstr=%08x, jchars=%08x)",
 		(int)env, (int)jstr, (int)chars);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	stringMap_t* s = ext->execManager->getDalvikChars(chars);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	stringMap_t* s = em->getDalvikChars(chars);
 	if (s == 0) {
 		ALOGE("Chars entry missing");
 		return;
@@ -2650,35 +2650,35 @@ void ReleaseStringChars(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 		ALOGE("Negative string length: %d", s->length);
 		return;
 	}
-	ALOGD("found string map entry at %08x", (int)s);
-	ALOGD("with length=%d, dalvikP=%08x, chars=%s", s->length, (int)(s->dalvikP), s->wrapperP);
+	//ALOGD("found string map entry at %08x", (int)s);
+	//ALOGD("with length=%d, dalvikP=%08x, chars=%s", s->length, (int)(s->dalvikP), s->wrapperP);
 	int size = sizeof(jstr) + sizeof(s->dalvikP) + sizeof(s->length) + sizeof(jchar)*s->length;
-	void* data = malloc(size);
-	ALOGD("allocated memory of size %d to %08x", size, (int*)data);
-	memcpy(data, &jstr, sizeof(jstr));
-	memcpy(data+sizeof(jstr), &(s->dalvikP), sizeof(s->dalvikP));
-	memcpy(data+sizeof(jstr)+sizeof(s->dalvikP), &(s->length), sizeof(s->length));
-	memcpy(data+sizeof(jstr)+sizeof(s->dalvikP)+sizeof(s->length), chars, sizeof(jchar)*s->length);
-	ALOGD("copied all data");
-    ext->execManager->jniCall.function = 56;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
+	int* data = (int*)malloc(size);
+	//ALOGD("allocated memory of size %d to %08x", size, (int*)data);
+	data[0] = (int)jstr;
+	data[1] = s->dalvikP;
+	data[2] = s->length;
+	memcpy(&data[3], chars, sizeof(jchar)*s->length);
+    em->jniCall.function = 56;
+    em->jniCall.taintsize = size;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
 	ALOGD("ReleaseStringChars: Now deleting entry in table (chars=%08x)", (int)chars);
-	ALOGD("execManager=%08x", (int)(ext->execManager));
-	ext->execManager->deleteCharsEntry(chars);
+	em->deleteCharsEntry(chars);
 }
 
 //code 2
 static jstring NewStringUTF(JNIEnvMod* env, const char* bytes) {
     ALOGD("jniEnvMod->NewStringUTF(env=%08x, bytes=%08x (%s))", (int)env, (int)bytes, bytes);
-    JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
     int size = strlen(bytes)+1; //+1 for terminating 0
-    ext->execManager->jniCall.function = 2;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = bytes;
-    ext->execManager->reqJniCall();
-    jstring strResult = (jstring)*(int*)(ext->execManager->jniCall.param_data);
+    em->jniCall.function = 2;
+    em->jniCall.taintsize = size;
+    em->jniCall.length = size;
+    em->jniCall.param_data = bytes;
+    em->reqJniCall();
+    jstring strResult = *(jstring*)em->jniCall.param_data;
     ALOGD("returning %08x", (int)strResult);
     return strResult;
 }
@@ -2687,40 +2687,34 @@ static jstring NewStringUTF(JNIEnvMod* env, const char* bytes) {
 static jsize GetStringUTFLength(JNIEnvMod* env, jstring jstr) {
 	ALOGD("jniEnvMod->GetStringUTFLength(env=%08x, jstr=%08x)", (int)env, (int)jstr);
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
-	em->jniCall.function = 999;
+	em->jniCall.function = 144;
+	em->jniCall.taintsize = 0;
 	em->jniCall.length = sizeof(jstr);
 	em->jniCall.param_data = &jstr;
 	em->reqJniCall();
-	return *(jsize*)(em->jniCall.param_data);
+	return *(jsize*)em->jniCall.param_data;
 }
 
 //code 1
 static const char* GetStringUTFChars(JNIEnvMod* env, jstring jstr, jboolean* isCopy) {
 	ALOGD("jniEnvMod->GetStringUTFChars(env=%08x, jstr=%08x, isCopy=%08x)",
 		(int)env, (int)jstr, (int)isCopy);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	ALOGD("JniEnv->execManager=%p with status %s",
-		ext->execManager, ExecutionManager::strStatus(ext->execManager->mStatus));
-	int size = sizeof(jstring), sizeb = sizeof(jboolean)*sizeof(char);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	int size = sizeof(jstring);
 	//void* data = malloc(size+sizeb); // freed after reqJniCall()
-	void* data = malloc(size); // freed after reqJniCall()
-	memcpy(data, &jstr, size);
-	//if (isCopy != NULL) memcpy(data+size, isCopy, sizeb);
-	//else memset(data+size, 0, sizeb);
-	ALOGD("jstr=%p, iscopy=%d", jstr, isCopy);
-	ext->execManager->jniCall.function = 1;
-	ext->execManager->jniCall.param_data = data;
-    ext->execManager->jniCall.taintsize = 0;
-	ext->execManager->jniCall.length = size;
-	ext->execManager->reqJniCall();
-	free(data);
+	em->jniCall.function = 1;
+	em->jniCall.param_data = &jstr;
+    em->jniCall.taintsize = 0;
+	em->jniCall.length = sizeof(jstr);
+	em->reqJniCall();
     if (isCopy != NULL) {
         *isCopy = JNI_TRUE;
     }
 	//ext->execManager->reqJniCall(42);
-	int dalvikP = *(int*)(ext->execManager->jniCall.param_data);
-	const char* d = (char*)(ext->execManager->jniCall.param_data+sizeof(char*));
-	ext->execManager->addStringChars(dalvikP, 0, (const jchar*)d);
+	int* result = (int*)em->jniCall.param_data;
+	int dalvikP = result[0];
+	const char* d = (char*)&result[1];
+	em->addStringChars(dalvikP, 0, (const jchar*)d);
 	return d;
 }
 
@@ -2728,19 +2722,20 @@ static const char* GetStringUTFChars(JNIEnvMod* env, jstring jstr, jboolean* isC
 static void ReleaseStringUTFChars(JNIEnvMod* env, jstring jstr, const char* utf) {
 	ALOGD("jniEnvMod->ReleaseStringUTFChars(env=%08x, jstr=%08x, utf=%s)",
 		(int)env, (int)jstr, utf);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	stringMap_t* s = ext->execManager->getDalvikChars((const jchar*)utf);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	stringMap_t* s = em->getDalvikChars((const jchar*)utf);
 	int length = strlen(utf);
 	int size = sizeof(char*) + sizeof(int) + length*8;
-	void* data = malloc(size);
-	memcpy(data, &s->dalvikP, sizeof(char*));
-	memcpy(data+sizeof(char*), &length, sizeof(int));
-	memcpy(data+sizeof(char*)+sizeof(int), &jstr, sizeof(jstring));
-	memcpy(data+sizeof(char*)+2*sizeof(int), utf, length*8);
-	ext->execManager->jniCall.function = 67;
-	ext->execManager->jniCall.param_data = data;
-	ext->execManager->jniCall.length = size;
-	ext->execManager->reqJniCall();
+	int* data = (int*)malloc(size);
+	data[0] = s->dalvikP;
+	data[1] = length;
+	data[2] = (int)jstr;
+	memcpy(&data[3], utf, length*8);
+	em->jniCall.function = 67;
+	em->jniCall.param_data = data;
+	em->jniCall.taintsize = size;
+	em->jniCall.length = size;
+	em->reqJniCall();
 	free(data);
 }
 
@@ -2761,16 +2756,17 @@ static jobjectArray NewObjectArray(JNIEnvMod* env, jsize length, jclass jelement
 	ALOGD("jniEnvMod->NewObjectArray(env=%08x, length=%d, jelementClass=%08x, jinitialElement=%08x)",
 		(int)env, length, (int)jelementClass, (int)jinitialElement);
 	int size = sizeof(length) + sizeof(jelementClass) + sizeof(jinitialElement);
-	void* data = malloc(size);
-	memcpy(data, &length, sizeof(length));
-	memcpy(data+sizeof(length), &jelementClass, sizeof(jelementClass));
-	memcpy(data+sizeof(length)+sizeof(jelementClass), &jinitialElement, sizeof(jinitialElement));
+	int* data = (int*)malloc(size);
+	data[0] = (int)jinitialElement;
+	data[1] = length;
+	data[2] = (int)jelementClass;
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
     em->jniCall.function = 122;
+    em->jniCall.taintsize = sizeof(jinitialElement);
     em->jniCall.length = size;
     em->jniCall.param_data = data;
     em->reqJniCall();
-	jobjectArray result = *(jobjectArray*)(em->jniCall.param_data);
+	jobjectArray result = *(jobjectArray*)em->jniCall.param_data;
 	free(data);
 	return result;
 }

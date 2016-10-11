@@ -30,22 +30,33 @@ namespace android{
 		//jboolean isCopy = *((jboolean*)(replydata+(sizeof(jstr)*sizeof(char))));
 		//ALOGD("jstr=%p, isCopy=%d", jstr, isCopy);
 		ALOGD("jstr=%08x", (int)jstr);
-		const char* chars = jniEnv->GetStringUTFChars(jstr, 0);
+		u4 taint = 0;
+		const char* chars = jniEnv->GetTaintedStringUTFChars(jstr, 0, &taint);
 		ALOGD("GetStringUTFChars returns %s; sizeof(*chars)=%d; strlen(chars)=%d",
 			chars, sizeof(*chars), strlen(chars));
 		//size = sizeof(*chars)*strlen(chars)+1;
-		size = 8*(strlen(chars)+1);
-		taintsize = 0;
-		callbackdata = malloc(size+sizeof(char*)); //freed by CALLBACK
-		memcpy(callbackdata, &chars, sizeof(char*));
-		memcpy(callbackdata+sizeof(char*), chars, size);
+		int strsize = strlen(chars)+1;
+		size = 8*strsize+sizeof(char*);
+		taintsize = size;
+		callbackdata = malloc(size+taintsize); //freed by CALLBACK
+		int* idata = (int*)callbackdata;
+		idata[0] = (int)chars;
+		memcpy(&idata[1], chars, 8*strsize);
+		if (taint != 0) {
+			memset(&idata[2+2*strsize], taint, 2*strsize);
+			memset(&idata[1+2*strsize], 0, 4);
+		} else
+			memset(&idata[1+2*strsize], 0, 4+8*strsize);
 	}
 
 	void BpWrapper::callNewStringUTF() {
 		*((char*)(replydata+replylength-1)) = '\0';
 		const char* chars = (char*)replydata;
 		ALOGD("read: %s", chars);
-		jstring result = jniEnv->NewStringUTF(chars);
+		u4 taint = 0;
+		int* tdata = (int*)replytaint;
+		for (int i=0; i<(replylength / 4); i++) taint |= tdata[i];
+		jstring result = jniEnv->NewTaintedStringUTF(chars, taint);
 		size = sizeof(jstring);
 		taintsize = 0;
 		callbackdata = malloc(size);
@@ -1071,12 +1082,19 @@ namespace android{
 	}
 
 	void BpWrapper::callReleaseStringChars() {
-		jstring jstr = *((jstring*)replydata);
-		jchar* dalvikP = (jchar*)(replydata+sizeof(jstr));
-		int strlen = *((int*)(replydata+sizeof(jstr)+sizeof(dalvikP)));
-		const jchar* chars = (jchar*)(replydata+sizeof(jstr)+sizeof(dalvikP)+sizeof(strlen));
+		int* idata = (int*)replydata;
+		jstring jstr = (jstring)idata[0];
+		jchar* dalvikP = (jchar*)idata[1];
+		int strlen = idata[2];
+		const jchar* chars = (jchar*)&idata[3];
+		int* tdata = (int*)replytaint;
+		int charlength = (replylength - 12)/4;
+		ALOGD("charlength = %d", charlength);
+		u4 taint = 0;
+		for (int i=0; i<charlength; i++)
+			taint |= tdata[i+3];
 		memcpy(dalvikP, chars, strlen*sizeof(jchar));
-		jniEnv->ReleaseStringChars(jstr, dalvikP);
+		jniEnv->ReleaseTaintedStringChars(jstr, taint, dalvikP);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -1188,13 +1206,16 @@ namespace android{
 	}
 
 	void BpWrapper::callReleaseStringUTFChars() {
-		char* dalvikP = (char*)(*((int*)replydata));
-		int length = *((int*)(replydata+sizeof(int)));
-		jstring jstr = *((jstring*)(replydata+2*sizeof(int)));
-		char* utf = (char*)(replydata+2*sizeof(int)+sizeof(jstring));
+		int* idata = (int*)replydata;
+		char* dalvikP = (char*)idata[0];
+		int length = idata[1];
+		jstring jstr = (jstring)idata[2];
+		char* utf = (char*)&idata[3];
+		u4 taint = 0;
 		ALOGD("ReleaseStringUTFChars received dalvikP=%08x, length=%d, utf=%s", (int)dalvikP, length, utf);
-		memcpy(dalvikP, utf, length*sizeof(char));
-		jniEnv->ReleaseStringUTFChars(jstr, dalvikP);
+		memcpy(dalvikP, utf, length*8);
+		for (int j=0; j<2*length; j++) taint |= idata[j+2*length+6];
+		jniEnv->ReleaseTaintedStringUTFChars(jstr, taint, dalvikP);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -1471,10 +1492,12 @@ namespace android{
 	}
 
 	void BpWrapper::callNewObjectArray() {
-		jsize length = *((jsize*)replydata);
-		jclass jelementClass = *((jclass*)(replydata+sizeof(length)));
-		jobject jinitialElement = *((jclass*)(replydata+sizeof(length)+sizeof(jelementClass)));
-		jobjectArray result = jniEnv->NewObjectArray(length, jelementClass, jinitialElement);
+		int* idata = (int*)replydata;
+		jobject jinitialElement = (jobject)idata[0];
+		jsize length = idata[1];
+		jclass jelementClass = (jclass)idata[2];
+		u4 taint = idata[3];
+		jobjectArray result = jniEnv->NewTaintedObjectArray(length, jelementClass, jinitialElement, taint);
 		taintsize = 0;
 		size = sizeof(result);
 		callbackdata = malloc(size);
