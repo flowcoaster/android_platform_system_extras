@@ -1245,16 +1245,20 @@ namespace android{
 	}
 
 #define GENERIC_GETARRAYELEMENTS() \
-		taintsize = 0;\
-		callbackdata = malloc(size + sizeof(size) + sizeof(result));\
-		memcpy(callbackdata, &size, sizeof(size));\
-		memcpy(callbackdata+sizeof(size), &result, sizeof(result));\
-		memcpy(callbackdata+sizeof(size)+sizeof(result), result, size);
+		taintsize = size + sizeof(size) + sizeof(result); \
+		callbackdata = malloc(2*(size + sizeof(size) + sizeof(result))); \
+		int* idata = (int*)callbackdata; \
+		idata[0] = size; \
+		idata[1] = (int) result; \
+		memcpy(&idata[2], result, size); \
+		memset(&idata[2+size/4], 0, 8); \
+		for (int j=0; j<=size/4; j++) idata[4+size/4+j] = taint; \
 
 	void BpWrapper::callGetBooleanArrayElements() {
 		jbooleanArray jarr = *((jbooleanArray*)replydata);
 		jboolean fake = 0;
-		void* result = jniEnv->GetBooleanArrayElements(jarr, &fake);
+		u4 taint = 0;
+		void* result = jniEnv->GetTaintedBooleanArrayElements(jarr, &fake, &taint);
 		ALOGD("dalvik void pointer: %08x", (int)result);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jboolean);
 		GENERIC_GETARRAYELEMENTS();
@@ -1263,7 +1267,8 @@ namespace android{
 	void BpWrapper::callGetByteArrayElements() {
 		jbyteArray jarr = *((jbyteArray*)replydata);
 		jboolean fake = 0;
-		void* result = jniEnv->GetByteArrayElements(jarr, &fake);
+		u4 taint = 0;
+		void* result = jniEnv->GetTaintedByteArrayElements(jarr, &fake, &taint);
 		ALOGD("dalvik void pointer: %08x", (int)result);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jbyte);
 		GENERIC_GETARRAYELEMENTS();
@@ -1272,7 +1277,8 @@ namespace android{
 	void BpWrapper::callGetCharArrayElements() {
 		jcharArray jarr = *((jcharArray*)replydata);
 		jboolean fake = 0;
-		void* result = jniEnv->GetCharArrayElements(jarr, &fake);
+		u4 taint = 0;
+		void* result = jniEnv->GetTaintedCharArrayElements(jarr, &fake, &taint);
 		ALOGD("dalvik void pointer: %08x", (int)result);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jchar);
 		GENERIC_GETARRAYELEMENTS();
@@ -1281,7 +1287,8 @@ namespace android{
 	void BpWrapper::callGetShortArrayElements() {
 		jshortArray jarr = *((jshortArray*)replydata);
 		jboolean fake = 0;
-		void* result = jniEnv->GetShortArrayElements(jarr, &fake);
+		u4 taint = 0;
+		void* result = jniEnv->GetTaintedShortArrayElements(jarr, &fake, &taint);
 		ALOGD("dalvik void pointer: %08x", (int)result);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jshort);
 		GENERIC_GETARRAYELEMENTS();
@@ -1290,7 +1297,8 @@ namespace android{
 	void BpWrapper::callGetIntArrayElements() {
 		jintArray jarr = *((jintArray*)replydata);
 		jboolean fake = 0;
-		void* result = jniEnv->GetIntArrayElements(jarr, &fake);
+		u4 taint = 0;
+		void* result = jniEnv->GetTaintedIntArrayElements(jarr, &fake, &taint);
 		ALOGD("dalvik void pointer: %08x", (int)result);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jint);
 		GENERIC_GETARRAYELEMENTS();
@@ -1299,7 +1307,8 @@ namespace android{
 	void BpWrapper::callGetLongArrayElements() {
 		jlongArray jarr = *((jlongArray*)replydata);
 		jboolean fake = 0;
-		void* result = jniEnv->GetLongArrayElements(jarr, &fake);
+		u4 taint = 0;
+		void* result = jniEnv->GetTaintedLongArrayElements(jarr, &fake, &taint);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jlong);
 		GENERIC_GETARRAYELEMENTS();
 	}
@@ -1307,7 +1316,8 @@ namespace android{
 	void BpWrapper::callGetFloatArrayElements() {
 		jfloatArray jarr = *((jfloatArray*)replydata);
 		jboolean fake = 0;
-		void* result = jniEnv->GetFloatArrayElements(jarr, &fake);
+		u4 taint = 0;
+		void* result = jniEnv->GetTaintedFloatArrayElements(jarr, &fake, &taint);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jfloat);
 		GENERIC_GETARRAYELEMENTS();
 	}
@@ -1315,7 +1325,8 @@ namespace android{
 	void BpWrapper::callGetDoubleArrayElements() {
 		jdoubleArray jarr = *((jdoubleArray*)replydata);
 		jboolean fake = 0;
-		void* result = jniEnv->GetDoubleArrayElements(jarr, &fake);
+		u4 taint = 0;
+		void* result = jniEnv->GetTaintedDoubleArrayElements(jarr, &fake, &taint);
 		size = jniEnv->GetArrayLength(jarr)*sizeof(jdouble);
 		GENERIC_GETARRAYELEMENTS();
 	}
@@ -1693,23 +1704,30 @@ namespace android{
 	}
 
 	void BpWrapper::callGetObjectArrayElement() {
-		jobjectArray jarr = *(jobjectArray*)replydata;
-		jsize index = *(jsize*)(replydata+sizeof(jarr));
+		int* idata = (int*)replydata;
+		jobjectArray jarr = (jobjectArray)idata[0];
+		jsize index = idata[1];
+		u4 taint = 0;
 		ALOGD("call GetObjectArrayElement(jarr=%08x, index=%d)", (int)jarr, index);
-		jobject result = jniEnv->GetObjectArrayElement(jarr, index);
-		ALOGD("callGetObjectArrayElement->%08x", (int)result);
-		taintsize = 0;
+		jobject result = jniEnv->GetTaintedObjectArrayElement(jarr, index, &taint);
+		ALOGD("callGetObjectArrayElement->%08x (taint=%08x)", (int)result, taint);
+		taintsize = sizeof(taint);
 		size = sizeof(result);
-		callbackdata = malloc(size);
-		memcpy(callbackdata, &result, size);
+		callbackdata = malloc(size + taintsize);
+		idata = (int*)callbackdata;
+		idata[0] = (int)result;
+		idata[1] = taint;
 	}
 
 	void BpWrapper::callSetObjectArrayElement() {
-		jobjectArray jarr = *(jobjectArray*)replydata;
-		jsize index = *(jsize*)(replydata+sizeof(jarr));
-		jobject jobj = *(jobject*)(replydata+sizeof(jarr)+sizeof(index));
-		ALOGD("call SetObjectArrayElement(jarr=%08x, index=%d, jobj=%08x)", (int)jarr, index, (int)jobj);
-		jniEnv->SetObjectArrayElement(jarr, index, jobj);
+		int* idata = (int*)replydata;
+		jobject jobj = (jobject)idata[0];
+		jsize index = idata[1];
+		jobjectArray jarr = (jobjectArray)idata[2];
+		u4 taint = idata[3];
+		ALOGD("call SetTaintedObjectArrayElement(jarr=%08x, index=%d, jobj=%08x, taint=%08x)", 
+			(int)jarr, index, (int)jobj, taint);
+		jniEnv->SetTaintedObjectArrayElement(jarr, index, jobj, taint);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
