@@ -152,7 +152,7 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    int argInfo = data.readInt32();
 	    ALOGD("read parcel: clazz=%p, argInfo=%d, argc=%d, shorty=%s, libHandle=%d, funcHandle=%d",
 		clazz, argInfo, argc, shorty, libHandleRef, funcRef);
-	    for (int i=0; i<argc; i++) ALOGD("taint %08x <- args[%d]=%d", vectaints[i], i, argv[i]);
+	    for (int i=0; i<argc; i++) ALOGD("taint %08x <- args[%d]=%08x", vectaints[i], i, argv[i]);
 	    //for (int i=0; i<argc+2; i++) ALOGD("taint %08x <- args[%d]=%08x", vectaints[i], i, argv[i]);
 	    argv++; // hack for the extra value at index 0
 

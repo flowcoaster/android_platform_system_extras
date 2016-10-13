@@ -41,6 +41,7 @@ namespace android{
 		callbackdata = malloc(size+taintsize); //freed by CALLBACK
 		int* idata = (int*)callbackdata;
 		idata[0] = (int)chars;
+		ALOGD("dalvikP=%08x", idata[0]);
 		memcpy(&idata[1], chars, 8*strsize);
 		if (taint != 0) {
 			memset(&idata[2+2*strsize], taint, 2*strsize);
@@ -891,179 +892,219 @@ namespace android{
 		WRITE_CALLRESULT();
 	}
 
-#define ARRAYREGION_EXTRACT() \
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));\
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
-
 	void BpWrapper::callSetBooleanArrayRegion() {
-		jbooleanArray jarr = *((jbooleanArray*)(replydata));
-		ARRAYREGION_EXTRACT();
-		const jboolean* buf = (jboolean*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
-		jniEnv->SetBooleanArrayRegion(jarr, start, len, buf);
+		int* idata = (int*)replydata;
+		jsize len = idata[0];
+		const jboolean* buf = (jboolean*)&idata[1];
+		jbooleanArray jarr = (jbooleanArray)idata[len*sizeof(buf[0])/4+1];
+		jsize start = idata[len*sizeof(buf[0])/4+2];
+		u4 taint = 0;
+		for (int j=0; j<len*sizeof(buf[0])/4; j++) taint |= idata[len*sizeof(buf[0])/4+4+j];
+		jniEnv->SetTaintedBooleanArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
 	void BpWrapper::callSetByteArrayRegion() {
-		jbyteArray jarr = *((jbyteArray*)(replydata));
-		ARRAYREGION_EXTRACT();
-		const jbyte* buf = (jbyte*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
-		jniEnv->SetByteArrayRegion(jarr, start, len, buf);
+		int* idata = (int*)replydata;
+		jsize len = idata[0];
+		const jbyte* buf = (jbyte*)&idata[1];
+		jbyteArray jarr = (jbyteArray)idata[len*sizeof(buf[0])/4+1];
+		jsize start = idata[len*sizeof(buf[0])/4+2];
+		u4 taint = 0;
+		for (int j=0; j<len*sizeof(buf[0])/4; j++) taint |= idata[len*sizeof(buf[0])/4+4+j];
+		jniEnv->SetTaintedByteArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
 	void BpWrapper::callSetCharArrayRegion() {
-		jcharArray jarr = *((jcharArray*)(replydata));
-		ARRAYREGION_EXTRACT();
-		const jchar* buf = (jchar*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
-		jniEnv->SetCharArrayRegion(jarr, start, len, buf);
+		int* idata = (int*)replydata;
+		jsize len = idata[0];
+		const jchar* buf = (jchar*)&idata[1];
+		jcharArray jarr = (jcharArray)idata[len*sizeof(buf[0])/4+1];
+		jsize start = idata[len*sizeof(buf[0])/4+2];
+		u4 taint = 0;
+		for (int j=0; j<len*sizeof(buf[0])/4; j++) taint |= idata[len*sizeof(buf[0])/4+4+j];
+		jniEnv->SetTaintedCharArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
 	void BpWrapper::callSetShortArrayRegion() {
-		jshortArray jarr = *((jshortArray*)(replydata));
-		ARRAYREGION_EXTRACT();
-		const jshort* buf = (jshort*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
-		//ALOGD("buf[0]=%08x, buf[1]=%08x, buf[2]=%08x", buf[0], buf[1], buf[2]);
-		//ALOGD("calling SetShortArrayRegion(jarr=%08x, start=%08x, len=%08x, buf=%08x",
-		//	jarr, start, len, buf);
-		jniEnv->SetShortArrayRegion(jarr, start, len, buf);
+		int* idata = (int*)replydata;
+		jsize len = idata[0];
+		const jshort* buf = (jshort*)&idata[1];
+		jshortArray jarr = (jshortArray)idata[len*sizeof(buf[0])/4+1];
+		jsize start = idata[len*sizeof(buf[0])/4+2];
+		u4 taint = 0;
+		for (int j=0; j<len*sizeof(buf[0])/4; j++) taint |= idata[len*sizeof(buf[0])/4+4+j];
+		jniEnv->SetTaintedShortArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
 	void BpWrapper::callSetIntArrayRegion() {
-		jintArray jarr = *((jintArray*)(replydata));
-		ARRAYREGION_EXTRACT();
-		const jint* buf = (jint*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
-		jniEnv->SetIntArrayRegion(jarr, start, len, buf);
+		int* idata = (int*)replydata;
+		jsize len = idata[0];
+		const jint* buf = (jint*)&idata[1];
+		jintArray jarr = (jintArray)idata[len*sizeof(buf[0])/4+1];
+		jsize start = idata[len*sizeof(buf[0])/4+2];
+		u4 taint = 0;
+		for (int j=0; j<len*sizeof(buf[0])/4; j++) taint |= idata[len*sizeof(buf[0])/4+4+j];
+		jniEnv->SetTaintedIntArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
 	void BpWrapper::callSetLongArrayRegion() {
-		jlongArray jarr = *((jlongArray*)(replydata));
-		ARRAYREGION_EXTRACT();
-		const jlong* buf = (jlong*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
-		jniEnv->SetLongArrayRegion(jarr, start, len, buf);
+		int* idata = (int*)replydata;
+		jsize len = idata[0];
+		const jlong* buf = (jlong*)&idata[1];
+		jlongArray jarr = (jlongArray)idata[len*sizeof(buf[0])/4+1];
+		jsize start = idata[len*sizeof(buf[0])/4+2];
+		u4 taint = 0;
+		for (int j=0; j<len*sizeof(buf[0])/4; j++) taint |= idata[len*sizeof(buf[0])/4+4+j];
+		jniEnv->SetTaintedLongArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
 	void BpWrapper::callSetFloatArrayRegion() {
-		jfloatArray jarr = *((jfloatArray*)(replydata));
-		ARRAYREGION_EXTRACT();
-		const jfloat* buf = (jfloat*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
-		jniEnv->SetFloatArrayRegion(jarr, start, len, buf);
+		int* idata = (int*)replydata;
+		jsize len = idata[0];
+		const jfloat* buf = (jfloat*)&idata[1];
+		jfloatArray jarr = (jfloatArray)idata[len*sizeof(buf[0])/4+1];
+		jsize start = idata[len*sizeof(buf[0])/4+2];
+		u4 taint = 0;
+		for (int j=0; j<len*sizeof(buf[0])/4; j++) taint |= idata[len*sizeof(buf[0])/4+4+j];
+		jniEnv->SetTaintedFloatArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
 	void BpWrapper::callSetDoubleArrayRegion() {
-		jdoubleArray jarr = *((jdoubleArray*)(replydata));
-		ARRAYREGION_EXTRACT();
-		const jdouble* buf = (jdouble*)(replydata+sizeof(jarr)+sizeof(start)+sizeof(len));
-		jniEnv->SetDoubleArrayRegion(jarr, start, len, buf);
+		int* idata = (int*)replydata;
+		jsize len = idata[0];
+		const jdouble* buf = (jdouble*)&idata[1];
+		jdoubleArray jarr = (jdoubleArray)idata[len*sizeof(buf[0])/4+1];
+		jsize start = idata[len*sizeof(buf[0])/4+2];
+		u4 taint = 0;
+		for (int j=0; j<len*sizeof(buf[0])/4; j++) taint |= idata[len*sizeof(buf[0])/4+4+j];
+		jniEnv->SetTaintedDoubleArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
 		callbackdata = malloc(size);
 	}
 
+#define COPYOUT_GETARRAYREGION() \
+		size = len*sizeof(buf[0]); \
+		taintsize = size; \
+		callbackdata = buf; \
+		idata = (int*)callbackdata; \
+		for (int j=0; j<(len*sizeof(buf[0])/4); j++) idata[size/4+j]=taint; \
+
 	void BpWrapper::callGetBooleanArrayRegion() {
-		jbooleanArray jarr = *((jbooleanArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
-		jboolean* buf = (jboolean*)malloc(len*sizeof(jboolean));
-		jniEnv->GetBooleanArrayRegion(jarr, start, len, buf);
-		size = len*sizeof(jboolean);
-		taintsize = 0;
-		callbackdata = buf;
+		int* idata = (int*)replydata;
+		jbooleanArray jarr = (jbooleanArray)idata[0];
+		jsize start = idata[1];
+		jsize len = idata[2];
+		u4 taint = 0;
+		callbackdata = malloc(2*len*sizeof(jboolean));
+		jboolean* buf = (jboolean*)callbackdata;
+		jniEnv->GetTaintedBooleanArrayRegion(jarr, start, len, buf, &taint);
+		COPYOUT_GETARRAYREGION();
 	}
 
 	void BpWrapper::callGetByteArrayRegion() {
-		jbyteArray jarr = *((jbyteArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
-		jbyte* buf = (jbyte*)malloc(len*sizeof(jbyte));
-		jniEnv->GetByteArrayRegion(jarr, start, len, buf);
-		size = len*sizeof(jbyte);
-		taintsize = 0;
-		callbackdata = buf;
+		int* idata = (int*)replydata;
+		jbyteArray jarr = (jbyteArray)idata[0];
+		jsize start = idata[1];
+		jsize len = idata[2];
+		u4 taint = 0;
+		callbackdata = malloc(2*len*sizeof(jbyte));
+		jbyte* buf = (jbyte*)callbackdata;
+		jniEnv->GetTaintedByteArrayRegion(jarr, start, len, buf, &taint);
+		COPYOUT_GETARRAYREGION();
 	}
 
 	void BpWrapper::callGetCharArrayRegion() {
-		jcharArray jarr = *((jcharArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
-		jchar* buf = (jchar*)malloc(len*sizeof(jchar));
-		jniEnv->GetCharArrayRegion(jarr, start, len, buf);
-		size = len*sizeof(jbyte);
-		taintsize = 0;
-		callbackdata = buf;
+		int* idata = (int*)replydata;
+		jcharArray jarr = (jcharArray)idata[0];
+		jsize start = idata[1];
+		jsize len = idata[2];
+		u4 taint = 0;
+		callbackdata = malloc(2*len*sizeof(jchar));
+		jchar* buf = (jchar*)callbackdata;
+		jniEnv->GetTaintedCharArrayRegion(jarr, start, len, buf, &taint);
+		COPYOUT_GETARRAYREGION();
 	}
 
 	void BpWrapper::callGetShortArrayRegion() {
-		jshortArray jarr = *((jshortArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
-		jshort* buf = (jshort*)malloc(len*sizeof(jshort));
-		jniEnv->GetShortArrayRegion(jarr, start, len, buf);
-		size = len*sizeof(jshort);
-		taintsize = 0;
-		callbackdata = buf;
+		int* idata = (int*)replydata;
+		jshortArray jarr = (jshortArray)idata[0];
+		jsize start = idata[1];
+		jsize len = idata[2];
+		u4 taint = 0;
+		callbackdata = malloc(2*len*sizeof(jshort));
+		jshort* buf = (jshort*)callbackdata;
+		jniEnv->GetTaintedShortArrayRegion(jarr, start, len, buf, &taint);
+		COPYOUT_GETARRAYREGION();
 	}
 
 	void BpWrapper::callGetIntArrayRegion() {
-		jlongArray jarr = *((jlongArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
-		jlong* buf = (jlong*)malloc(len*sizeof(jlong));
-		jniEnv->GetLongArrayRegion(jarr, start, len, buf);
-		size = len*sizeof(jlong);
-		taintsize = 0;
-		callbackdata = buf;
+		int* idata = (int*)replydata;
+		jintArray jarr = (jintArray)idata[0];
+		jsize start = idata[1];
+		jsize len = idata[2];
+		u4 taint = 0;
+		callbackdata = malloc(2*len*sizeof(jint));
+		jint* buf = (jint*)callbackdata;
+		jniEnv->GetTaintedIntArrayRegion(jarr, start, len, buf, &taint);
+		COPYOUT_GETARRAYREGION();
 	}
 
 	void BpWrapper::callGetLongArrayRegion() {
-		jlongArray jarr = *((jlongArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
-		jlong* buf = (jlong*)malloc(len*sizeof(jlong));
-		jniEnv->GetLongArrayRegion(jarr, start, len, buf);
-		size = len*sizeof(jlong);
-		taintsize = 0;
-		callbackdata = buf;
+		int* idata = (int*)replydata;
+		jlongArray jarr = (jlongArray)idata[0];
+		jsize start = idata[1];
+		jsize len = idata[2];
+		u4 taint = 0;
+		callbackdata = malloc(2*len*sizeof(jlong));
+		jlong* buf = (jlong*)callbackdata;
+		jniEnv->GetTaintedLongArrayRegion(jarr, start, len, buf, &taint);
+		COPYOUT_GETARRAYREGION();
 	}
 
 	void BpWrapper::callGetFloatArrayRegion() {
-		jfloatArray jarr = *((jfloatArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
-		jfloat* buf = (jfloat*)malloc(len*sizeof(jfloat));
-		jniEnv->GetFloatArrayRegion(jarr, start, len, buf);
-		size = len*sizeof(jfloat);
-		taintsize = 0;
-		callbackdata = buf;
+		int* idata = (int*)replydata;
+		jfloatArray jarr = (jfloatArray)idata[0];
+		jsize start = idata[1];
+		jsize len = idata[2];
+		u4 taint = 0;
+		callbackdata = malloc(2*len*sizeof(jfloat));
+		jfloat* buf = (jfloat*)callbackdata;
+		jniEnv->GetTaintedFloatArrayRegion(jarr, start, len, buf, &taint);
+		COPYOUT_GETARRAYREGION();
 	}
 
 	void BpWrapper::callGetDoubleArrayRegion() {
-		jdoubleArray jarr = *((jdoubleArray*)(replydata));
-		jsize start = *((jsize*)(replydata+sizeof(jarr)));
-		jsize len = *((jsize*)(replydata+sizeof(jarr)+sizeof(start)));
-		jdouble* buf = (jdouble*)malloc(len*sizeof(jdouble));
-		jniEnv->GetDoubleArrayRegion(jarr, start, len, buf);
-		size = len*sizeof(jdouble);
-		taintsize = 0;
-		callbackdata = buf;
+		int* idata = (int*)replydata;
+		jdoubleArray jarr = (jdoubleArray)idata[0];
+		jsize start = idata[1];
+		jsize len = idata[2];
+		u4 taint = 0;
+		callbackdata = malloc(2*len*sizeof(jdouble));
+		jdouble* buf = (jdouble*)callbackdata;
+		jniEnv->GetTaintedDoubleArrayRegion(jarr, start, len, buf, &taint);
+		COPYOUT_GETARRAYREGION();
 	}
 
 	void BpWrapper::callGetStringChars() {
@@ -1078,7 +1119,8 @@ namespace android{
 		int* idata = (int*)callbackdata;
 		idata[0] = (int)result;
 		idata[1] = strlen;
-		memcpy(&idata[2], result, size);
+		ALOGD("writing out dalvikP=%08x; strlen=%08x", idata[0], idata[1]);
+		memcpy(&idata[2], result, strlen*sizeof(jchar));
 	}
 
 	void BpWrapper::callReleaseStringChars() {
