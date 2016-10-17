@@ -1256,26 +1256,31 @@ namespace android{
 		u4 taint = 0;
 		ALOGD("ReleaseStringUTFChars received dalvikP=%08x, length=%d, utf=%s", (int)dalvikP, length, utf);
 		memcpy(dalvikP, utf, length*8);
+		ALOGD("copied chars back");
 		for (int j=0; j<2*length; j++) taint |= idata[j+2*length+6];
 		jniEnv->ReleaseTaintedStringUTFChars(jstr, taint, dalvikP);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
+		ALOGD("<- release string utf chars");
 	}
 
 	void BpWrapper::callGetStringCritical() {
-		jstring jstr = *((jstring*)replydata);
+		int* idata = (int*)replydata;
+		jstring jstr = (jstring)idata[0];
 		ALOGD("GetStringCritical: jstr=%08x", (int)jstr);
-		jboolean isCopy = *((jboolean*)(replydata+sizeof(jstr)));
-		ALOGD("GetStringCritical: isCopy=%08x", isCopy);
-		const jchar* result = jniEnv->GetStringCritical(jstr, &isCopy);
-		ALOGD("GetStringCritical: %08x", (int)result);
+		u4 taint = 0;
+		const jchar* result = jniEnv->GetTaintedStringCritical(jstr, &taint, 0);
+		ALOGD("GetTaintedStringCritical: %08x (taint=%08x)", (int)result, taint);
 		int strlen = jniEnv->GetStringLength(jstr);
 		size = sizeof(jchar*)+sizeof(int)+strlen*sizeof(jchar);
-		taintsize = 0;
+		taintsize = size;
 		callbackdata = malloc(size);
-		memcpy(callbackdata, &result, sizeof(jchar*));
-		memcpy(callbackdata+sizeof(jchar*), &strlen, sizeof(jchar*));
-		memcpy(callbackdata+sizeof(jchar*)+sizeof(strlen), result, size);
+		idata = (int*)callbackdata;
+		idata[0] = (int)result;
+		idata[1] = strlen;
+		memcpy(&idata[2], result, size);
+		for (int j=0; j<strlen/2; j++)
+			idata[4+strlen/2+j] = taint;
 	}
 
 	void BpWrapper::callDeleteWeakGlobalRef() {

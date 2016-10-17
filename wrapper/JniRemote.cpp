@@ -3338,10 +3338,10 @@ static jint RegisterNatives(JNIEnvMod* env, jclass jclazz, const JNINativeMethod
 	int size = sizeof(jclazz) + sizeof(nMethods) + nMethods*(2*sizeof(int)+sizeof(void*));
 	for (int i=0; i<nMethods; i++)
 		size += (strlen(methods[i].name)+strlen(methods[i].signature)+2)*sizeof(char);
-	void* data = malloc(size);
-	memcpy(data, &jclazz, sizeof(jclazz));
-	memcpy(data+sizeof(jclazz), &nMethods, sizeof(nMethods));
-	void* d2 = data+sizeof(jclazz)+sizeof(nMethods);
+	int* data = (int*)malloc(size);
+	data[0] = (int)jclazz;
+	data[1] = nMethods;
+	void* d2 = &data[2];
 	for (int i=0; i<nMethods; i++) {
 		int j = strlen(methods[i].name)+1;
 		memcpy(d2, &j, sizeof(j));
@@ -3361,6 +3361,7 @@ static jint RegisterNatives(JNIEnvMod* env, jclass jclazz, const JNINativeMethod
 	}
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
     em->jniCall.function = 145;
+    em->jniCall.taintsize = 0;
     em->jniCall.length = size;
     em->jniCall.param_data = data;
     em->reqJniCall();
@@ -3374,10 +3375,11 @@ static jint UnregisterNatives(JNIEnvMod* env, jclass jclazz) {
 	ALOGD("UnregisterNatives(env=%08x, jclazz=%08x)", (int)env, (int)jclazz);
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	em->jniCall.function = 124;
+    em->jniCall.taintsize = 0;
 	em->jniCall.length = sizeof(jclazz);
 	em->jniCall.param_data = &jclazz;
 	em->reqJniCall();
-	return *(jint*)(em->jniCall.param_data);
+	return *(jint*)em->jniCall.param_data;
 }
 
 //code 164
@@ -3385,10 +3387,11 @@ static jint MonitorEnter(JNIEnvMod* env, jobject jobj) {
 	ALOGD("MonitorEnter(env=%08x, jobj=%08x)", (int)env, (int)jobj);
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	em->jniCall.function = 164;
+    em->jniCall.taintsize = 0;
 	em->jniCall.length = sizeof(jobj);
 	em->jniCall.param_data = &jobj;
 	em->reqJniCall();
-	return *(jint*)(em->jniCall.param_data);
+	return *(jint*)em->jniCall.param_data;
 }
 
 //code 165
@@ -3396,10 +3399,11 @@ static jint MonitorExit(JNIEnvMod* env, jobject jobj) {
 	ALOGD("MonitorExit(env=%08x, jobj=%08x)", (int)env, (int)jobj);
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	em->jniCall.function = 165;
+    em->jniCall.taintsize = 0;
 	em->jniCall.length = sizeof(jobj);
 	em->jniCall.param_data = &jobj;
 	em->reqJniCall();
-	return *(jint*)(em->jniCall.param_data);
+	return *(jint*)em->jniCall.param_data;
 }
 
 static jint GetJavaVM(JNIEnvMod* env, JavaVM** vm) {
@@ -3415,12 +3419,13 @@ static void GetStringRegion(JNIEnvMod* env, jstring jstr, jsize start, jsize len
 	ALOGD("GetStringRegion(env=%08x, jstr=%08x, start=%d, len=%d, buf=%08x)",
 		(int)env, (int)jstr, (int)start, (int)len, (int)buf);
 	int size = sizeof(jstr) + sizeof(start) + sizeof(len);
-	void* data = malloc(size);
-	memcpy(data, &jstr, sizeof(jstr));
-	memcpy(data+sizeof(jstr), &start, sizeof(start));
-	memcpy(data+sizeof(jstr)+sizeof(len), &len, sizeof(len));
+	int* data = (int*)malloc(size);
+	data[0] = (int)jstr;
+	data[1] = start;
+	data[2] = len;
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	em->jniCall.function = 120;
+    em->jniCall.taintsize = 0;
 	em->jniCall.length = size;
 	em->jniCall.param_data = data;
 	em->reqJniCall();
@@ -3433,12 +3438,13 @@ static void GetStringUTFRegion(JNIEnvMod* env, jstring jstr, jsize start, jsize 
 	ALOGD("GetStringUTFRegion(env=%08x, jstr=%08x, start=%d, len=%d, buf=%08x)",
 		(int)env, (int)jstr, (int)start, (int)len, (int)buf);
 	int size = sizeof(jstr) + sizeof(start) + sizeof(len);
-	void* data = malloc(size);
-	memcpy(data, &jstr, sizeof(jstr));
-	memcpy(data+sizeof(jstr), &start, sizeof(start));
-	memcpy(data+sizeof(jstr)+sizeof(len), &len, sizeof(len));
+	int* data = (int*)malloc(size);
+	data[0] = (int)jstr;
+	data[1] = start;
+	data[2] = len;
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	em->jniCall.function = 120;
+    em->jniCall.taintsize = 0;
 	em->jniCall.length = size;
 	em->jniCall.param_data = data;
 	em->reqJniCall();
@@ -3461,20 +3467,22 @@ static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jbyteArray jarr, jboolean
 //code 65
 static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, jboolean* isCopy) {
 	ALOGD("jniEnvMod->GetPrimitiveArrayCritical(env=%08x, jarr=%08x, isCopy)", (int)env, (int)jarr);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	int size = sizeof(jarr);
-    ext->execManager->jniCall.function = 65;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = &jarr;
-    ext->execManager->reqJniCall();
-	size = *((int*)(ext->execManager->jniCall.param_data));
-	int dalvikP = *((int*)(ext->execManager->jniCall.param_data+sizeof(int)));
+    em->jniCall.function = 65;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = size;
+    em->jniCall.param_data = &jarr;
+    em->reqJniCall();
+	int* idata = (int*)em->jniCall.param_data;
+	size = idata[0];
+	int dalvikP = idata[1];
 	ALOGD("GetPrimitiveArrayCritical received size=%d, dalvikP=%08x", size, dalvikP);
-	ext->execManager->addArray(jarr, size, dalvikP);
+	em->addArray(jarr, size, dalvikP);
 	//TODO: too fragile? void* might be freed by BnWrapper?
 	//void* result = (void*)(ext->execManager->jniCall.param_data+sizeof(int)+sizeof(dalvikP));
 	void* result = malloc(size);
-	memcpy(result, ext->execManager->jniCall.param_data+sizeof(int)+sizeof(dalvikP), size);
+	memcpy(result, &idata[2], size);
 	return result;
 }
 
@@ -3482,8 +3490,8 @@ static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, jboolean* is
 static void ReleasePrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, void* array, jint mode) {
 	ALOGD("jniEnvMod->ReleasePrimitiveArrayCritical(env=%08x, jarr=%08x, array=%08x, mode=%08x)", (int)env, (int)jarr, (int)array, mode);
 	if (mode == 1) return; 
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	arrayList_t* at = ext->execManager->getArrayLength(jarr);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	arrayList_t* at = em->getArrayLength(jarr);
 	ALOGD("address of length: %08x", (int)&(at->length));
 	ALOGD("address of dalvikP: %08x", (int)&(at->dalvikP));
 	ALOGD("dalvikP=%08x", at->dalvikP);
@@ -3494,14 +3502,17 @@ static void ReleasePrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, void* arr
 	jshort* iarr = (jshort*)array;
 	ALOGD("i[0]=%d, i[1]=%d, i[2]=%d, i[3]=%d, i[4]=%d, i[5]=%d, i[6]=%d",
 		iarr[0], iarr[1], iarr[2], iarr[3], iarr[4], iarr[5], iarr[6]);
-	void* data = malloc(size);
+	int* data = (int*)malloc(size);
+	data[0] = (int)jarr;
+	data[1] = at->length;
 	memcpy(data, &jarr, sizeof(jarr));
 	memcpy(data+sizeof(jarr), &(at->length), 2*sizeof(int));
-	memcpy(data+sizeof(jarr)+2*sizeof(int), array, at->length);
-    ext->execManager->jniCall.function = 66;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
+	memcpy(&data[2], array, at->length);
+    em->jniCall.function = 66;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
 	//free(array); crashes! TODO: but would we need to free this?
 }
 
@@ -3509,28 +3520,21 @@ static void ReleasePrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, void* arr
 static const jchar* GetStringCritical(JNIEnvMod* env, jstring jstr, jboolean* isCopy) {
 	ALOGD("jniEnvMod->GetStringCritical(env=%08x, jstr=%08x, isCopy=%08x)",
 		(int)env, (int)jstr, (int)isCopy);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jstr) + sizeof(jboolean);
-	void* data = malloc(size);
-	memcpy(data, &jstr, sizeof(jstr));
-	if (isCopy != 0) {
-		memcpy(data+sizeof(jstr), isCopy, sizeof(jboolean));
-	} else {
-		jboolean b = 0;
-		memcpy(data+sizeof(jstr), &b, sizeof(jboolean));
-	}
-    ext->execManager->jniCall.function = 68;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	const void* r = ext->execManager->jniCall.param_data;
-	int dalvikP = *((int*)r);
-	r += sizeof(jchar*);
-	int strlen = *((int*)r);
-	r += sizeof(int);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    if (isCopy != NULL) {
+        *isCopy = JNI_FALSE;
+    }
+    em->jniCall.function = 68;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = sizeof(jstr);
+    em->jniCall.param_data = &jstr;
+    em->reqJniCall();
+	const void* r = em->jniCall.param_data;
+	int* idata = (int*)em->jniCall.param_data;
+	int strlen = idata[1];
 	jchar* result = (jchar*)malloc(strlen*sizeof(jchar)+1);
-	memcpy(result, r, strlen*sizeof(jchar));
-	ext->execManager->addStringChars(dalvikP, strlen, result);
+	memcpy(result, &idata[2], strlen*sizeof(jchar));
+	em->addStringChars(idata[0], strlen, result);
 	ALOGD("GetStringCritical: %08x -> %s", *result, (char*)result);
 	return (const jchar*)result;
 }
