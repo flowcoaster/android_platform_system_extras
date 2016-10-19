@@ -218,8 +218,9 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    data.readInt32(&function);
 	    data.readInt32(&datasize);
 	    data.readInt32(&taintsize);
-	    ALOGD("callback on JNI request: read function=%d, datasize=%d, taintsize=%d", function, datasize, taintsize);
 	    void* rawdata = malloc(datasize); //freed at the end of CALLBACK
+	    ALOGD("callback on JNI request: read function=%d, datasize=%d, taintsize=%d @%08x",
+			function, datasize, taintsize, (int)rawdata);
 	    data.read(rawdata, datasize);
 	    ExecutionManager* myExecManager = ((JNIEnvModExt*)jniEnv)->execManager;
 	    if (function == myExecManager->jniCall.function) {
@@ -235,7 +236,8 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    ALOGD("Status of ExecutionManager after setJniResult is %s", ExecutionManager::strStatus(status));
 	    reply->writeInt32(status);
 	    if (status == ExecutionManager::WAIT4JNI) {
-			ALOGD("more JNI needed, writing out function and parameters");
+			ALOGD("more JNI needed, writing out function=%d and parameters",
+				myExecManager->jniCall.function);
 	    	reply->writeInt32(myExecManager->jniCall.function);
 	    	reply->writeInt32(myExecManager->jniCall.length);
 	    	reply->writeInt32(myExecManager->jniCall.taintsize);
@@ -245,7 +247,8 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 				ALOGD("param_data[%d]=%08x", ii, iparam_data[ii]);*/
 	    	//reply->write(myExecManager->jniCall.taint_data, myExecManager->jniCall.taintsize);
 	    	reply->write(myExecManager->jniCall.param_data, myExecManager->jniCall.length);
-			for (int i=0; i<myExecManager->jniCall.taintsize; i++) reply->writeInt32(0); //placeholder for taint values
+			for (int i=0; i<myExecManager->jniCall.taintsize; i++) 
+				reply->writeInt32(0); //placeholder for taint values
 	    } else if (status == ExecutionManager::FINISHED) {
 	      	ALOGD("dvmPlatformInvoke finished. result=%lld=%08x",
 				myExecManager->platformInvoke.pResult->j, myExecManager->platformInvoke.pResult->i);
@@ -254,7 +257,7 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 			// padding for taint values
 	    	for (int i=0; i<myExecManager->platformInvoke.argc; i++) reply->writeInt32((int)0);		
 	    }
-		ALOGD("now freeing return data pointer");
+		ALOGD("now freeing return data pointer @%08x", rawdata);
 	    free(rawdata);
 	    return NO_ERROR;
 	} case CHANGE_FUNC: {

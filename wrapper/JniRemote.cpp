@@ -2208,7 +2208,7 @@ static jdouble GetDoubleField(JNIEnvMod* env, jobject jobj, jfieldID fieldID) {
 
 #define SETFIELD_COPYDATA() \
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager; \
-	int size = sizeof(jobj) + sizeof(fieldID) + sizeof(val); \
+	int size = 3*sizeof(int); \
 	int* data = (int*)malloc(size); \
 	data[0] = (int)val; \
 	data[1] = (int)fieldID; \
@@ -2591,16 +2591,15 @@ static jstring NewString(JNIEnvMod* env, const jchar* unicodeChars, jsize len) {
 	ALOGD("NewString(env=%08x, unicodeChars=%08x, len=%d)", (int)env, (int)unicodeChars, len);
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	int size = sizeof(jchar)*len + sizeof(len);
-	void* data = malloc(size);
-	jsize* i = (jsize*)data;
-	*i = len;
-	memcpy(data+sizeof(len), unicodeChars, sizeof(jchar)*len);
+	int* data = (int*)malloc(size);
+	data[0] = len;
+	memcpy(&data[1], unicodeChars, sizeof(jchar)*len);
     em->jniCall.function = 147;
+    em->jniCall.taintsize = 0;
     em->jniCall.length = size;
     em->jniCall.param_data = data;
-    em->jniCall.taintsize = 0;
     em->reqJniCall();
-	jstring result = *(jstring*)(em->jniCall.param_data);
+	jstring result = *(jstring*)em->jniCall.param_data;
 	free(data);
 	return result;
 }
@@ -3543,8 +3542,8 @@ static const jchar* GetStringCritical(JNIEnvMod* env, jstring jstr, jboolean* is
 void ReleaseStringCritical(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 	ALOGD("jniEnvMod->ReleaseStringCritical(env=%08x, jstr=%08x, jchars=%08x)",
 		(int)env, (int)jstr, (int)chars);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	stringMap_t* s = ext->execManager->getDalvikChars(chars);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+	stringMap_t* s = em->getDalvikChars(chars);
 	if (s == 0) {
 		ALOGE("Chars entry missing");
 		return;
@@ -3555,18 +3554,18 @@ void ReleaseStringCritical(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 	//ALOGD("found string map entry at %08x", s);
 	//ALOGD("with length=%d, dalvikP=%08x, chars=%s", s->length, s->dalvikP, s->wrapperP);
 	int size = sizeof(jstr) + sizeof(s->dalvikP) + sizeof(s->length) + sizeof(jchar)*s->length;
-	void* data = malloc(size);
+	int* data = (int*)malloc(size);
 	//ALOGD("allocated memory of size %d to %08x", size, (int*)data);
-	memcpy(data, &jstr, sizeof(jstr));
-	memcpy(data+sizeof(jstr), &(s->dalvikP), sizeof(s->dalvikP));
-	memcpy(data+sizeof(jstr)+sizeof(s->dalvikP), &(s->length), sizeof(s->length));
-	memcpy(data+sizeof(jstr)+sizeof(s->dalvikP)+sizeof(s->length), chars, sizeof(jchar)*s->length);
-	ext->execManager->deleteCharsEntry(chars);
-    ext->execManager->jniCall.function = 57;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	const jchar* result = (jchar*)ext->execManager->jniCall.param_data;
+	data[0] = s->length;
+	memcpy(&data[1], chars, s->length/2);
+	data[1+(s->length+1)/2] = (int)jstr;
+	data[2+(s->length+1)/2] = s->dalvikP;
+	em->deleteCharsEntry(chars);
+    em->jniCall.function = 57;
+    em->jniCall.taintsize = sizeof(s->length) + sizeof(jchar)*s->length;
+    em->jniCall.length = size;
+    em->jniCall.param_data = data;
+    em->reqJniCall();
 }
 
 //code 109
@@ -3574,36 +3573,35 @@ static jweak NewWeakGlobalRef(JNIEnvMod* env, jobject jobj) {
 	ALOGD("jniEnvMod->NewWeakGlobalRef(env=%08x, jobj=%08x)", (int)env, (int)jobj);
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
     em->jniCall.function = 109;
+    em->jniCall.taintsize = 0;
     em->jniCall.length = sizeof(jobj);
     em->jniCall.param_data = &jobj;
     em->reqJniCall();
-	jweak result = *(jweak*)(em->jniCall.param_data);
+	jweak result = *(jweak*)em->jniCall.param_data;
 	return result;
 }
 
 //code 69
 static void DeleteWeakGlobalRef(JNIEnvMod* env, jweak jw) {
 	ALOGD("jniEnvMod->DeleteWeakGlobalRef(env=%08x, jweak=%08x)", (int)env, (int)jw);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-	int size = sizeof(jw);
-	void* data = malloc(size);
-	memcpy(data, &jw, size);
-    ext->execManager->jniCall.function = 69;
-    ext->execManager->jniCall.length = size;
-    ext->execManager->jniCall.param_data = data;
-    ext->execManager->reqJniCall();
-	free(data);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 69;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = sizeof(jw);
+    em->jniCall.param_data = &jw;
+    em->reqJniCall();
 }
 
 //code 13
 static jboolean ExceptionCheck(JNIEnvMod* env) {
 	ALOGD("jniEnvMod->ExceptionCheck(env=%08x)", (int)env);
-	JNIEnvModExt* ext = (JNIEnvModExt*)env;
-    ext->execManager->jniCall.function = 13;
-    ext->execManager->jniCall.length = 0;
-    ext->execManager->jniCall.param_data = 0;
-    ext->execManager->reqJniCall();
-	jboolean result = (jboolean)*(int*)(ext->execManager->jniCall.param_data);
+	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    em->jniCall.function = 13;
+    em->jniCall.taintsize = 0;
+    em->jniCall.length = 0;
+    em->jniCall.param_data = 0;
+    em->reqJniCall();
+	jboolean result = *(jboolean*)em->jniCall.param_data;
 	ALOGD("returning %08x", (int)result);
 	return result;
 }
@@ -3622,7 +3620,7 @@ static jobject NewDirectByteBuffer(JNIEnvMod* env, void* address, jlong capacity
     em->jniCall.length = size;
     em->jniCall.param_data = data;
     em->reqJniCall();
-	jobject result = *(jobject*)(em->jniCall.param_data);
+	jobject result = *(jobject*)em->jniCall.param_data;
 	free(data);
 	return result;
 }

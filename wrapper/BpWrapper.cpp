@@ -285,9 +285,10 @@ namespace android{
 		size = sizeof(result) + sizeof(taint);
 		callbackdata = malloc(size);
 		taintsize = sizeof(taint);
-		jlong* rdata = (jlong*)callbackdata;
-		rdata[0] = result;
-		rdata[1] = taint;
+		jlong* ldata = (jlong*)callbackdata;
+		int* idata = (int*)callbackdata;
+		ldata[0] = result;
+		idata[2] = taint;
 		ALOGD("GetLongField()->%08x", (int)result);
 	}
 
@@ -307,8 +308,9 @@ namespace android{
 		callbackdata = malloc(size);
 		taintsize = sizeof(taint);
 		jdouble* rdata = (jdouble*)callbackdata;
+		int* idata = (int*)callbackdata;
 		rdata[0] = result;
-		rdata[1] = taint;
+		idata[2] = taint;
 		ALOGD("GetDoubleField()->%f", result);
 	}
 
@@ -339,8 +341,10 @@ namespace android{
 	void BpWrapper::callSetBooleanField() {
 		UNPACK_SETFIELD();
 		jboolean value = (jboolean)idata[0];
-		ALOGD("SetBooleanTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
+		ALOGD("SetBooleanTaintedField: Field %08x to %08x with taint %08x in object %08x",
+			(int)fieldID, value, taint, (int)jobj);
 		jniEnv->SetBooleanTaintedField(jobj, fieldID, value, taint);
+		ALOGD("Field is set, returning...");
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -1142,12 +1146,15 @@ namespace android{
 	}
 
 	void BpWrapper::callReleaseStringCritical() {
-		jstring jstr = *((jstring*)replydata);
-		jchar* dalvikP = (jchar*)(replydata+sizeof(jstr));
-		int strlen = *((int*)(replydata+sizeof(jstr)+sizeof(dalvikP)));
-		const jchar* chars = (jchar*)(replydata+sizeof(jstr)+sizeof(dalvikP)+sizeof(strlen));
+		int* idata = (int*)replydata;
+		int strlen = idata[0];
+		const jchar* chars = (const jchar*)&idata[1];
+		jstring jstr = (jstring)idata[1+(strlen+1)/2];
+		jchar* dalvikP = (jchar*)idata[2+(strlen+1)/2];
 		memcpy(dalvikP, chars, strlen*sizeof(jchar));
-		jniEnv->ReleaseStringCritical(jstr, dalvikP);
+		u4 taint = 0;
+		for (int j=0; j<(strlen+1)/2; j++) taint |= idata[3+(strlen+1)/2+j];
+		jniEnv->ReleaseTaintedStringCritical(jstr, taint, dalvikP);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
 	}
@@ -2139,6 +2146,7 @@ namespace android{
 	    data.write(rawdata, length);
 		if (taintlength > 0) data.write(rawdata+length, taintlength);
 	    remote()->transact(CALLBACK, data, &reply);
+		ALOGD("now freeing rawdata @%08x", (int)rawdata);
 	    free (rawdata);
 	    int execStatus = reply.readInt32();
 	    ALOGD("Status of execution manager is now: %d", execStatus);
