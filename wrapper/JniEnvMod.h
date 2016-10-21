@@ -587,6 +587,8 @@ struct JNINativeInterfaceMod {
     void        (*ReleaseTaintedStringCritical)(JNIEnvMod*, jstring, u4, const jchar*);
 
     jint        (*RegisterTaintedNatives)(JNIEnvMod*, jclass, const JNINativeMethod*, jint);
+
+    jint        (*GetUTFCharsByteLength)(JNIEnvMod* env, jstring jstr);
 //#endif
 };
 
@@ -1424,6 +1426,9 @@ struct _JNIEnvMod {
 
 	jint RegisterTaintedNatives(jclass jclazz, const JNINativeMethod* methods, jint nMethods)
 	{ return functions->RegisterTaintedNatives(this, jclazz, methods, nMethods); }
+
+	jint GetUTFCharsByteLength(jstring jstr)
+	{ return functions->GetUTFCharsByteLength(this, jstr); }
 
 #endif /*__cplusplus*/
 

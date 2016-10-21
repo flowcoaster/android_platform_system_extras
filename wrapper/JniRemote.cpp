@@ -2713,8 +2713,10 @@ static const char* GetStringUTFChars(JNIEnvMod* env, jstring jstr, jboolean* isC
 	//ext->execManager->reqJniCall(42);
 	int* result = (int*)em->jniCall.param_data;
 	int dalvikP = result[0];
-	const char* d = (char*)&result[1];
-	em->addStringChars(dalvikP, 0, (const jchar*)d);
+	int length = result[1];
+	ALOGD("read dalvikP=%08x, length=%d", dalvikP, length);
+	const char* d = (char*)&result[2];
+	em->addStringChars(dalvikP, length, (const jchar*)d);
 	return d;
 }
 
@@ -2728,9 +2730,9 @@ static void ReleaseStringUTFChars(JNIEnvMod* env, jstring jstr, const char* utf)
 	int size = sizeof(char*) + sizeof(int) + length*8;
 	int* data = (int*)malloc(size);
 	data[0] = s->dalvikP;
-	data[1] = length;
+	data[1] = s->length;
 	data[2] = (int)jstr;
-	memcpy(&data[3], utf, length*8);
+	memcpy(&data[3], utf, data[1]);
 	em->jniCall.function = 67;
 	em->jniCall.param_data = data;
 	em->jniCall.taintsize = size;
@@ -3447,7 +3449,7 @@ static void GetStringUTFRegion(JNIEnvMod* env, jstring jstr, jsize start, jsize 
 	em->jniCall.length = size;
 	em->jniCall.param_data = data;
 	em->reqJniCall();
-	memcpy(buf, em->jniCall.param_data, 8*len); //UTF-chars are 8bit
+	memcpy(buf, em->jniCall.param_data, len); //TODO: assuming UTF-chars are 8bit
 	free(data);
 }
 

@@ -35,19 +35,21 @@ namespace android{
 		ALOGD("GetStringUTFChars returns %s; sizeof(*chars)=%d; strlen(chars)=%d",
 			chars, sizeof(*chars), strlen(chars));
 		//size = sizeof(*chars)*strlen(chars)+1;
-		int strsize = strlen(chars)+1;
-		size = 8*strsize+sizeof(char*);
+		int strsize = jniEnv->GetUTFCharsByteLength(jstr);
+		ALOGD("chars needs %d bytes", strsize);
+		size = 2*strsize+sizeof(char*)+sizeof(strsize);
 		taintsize = size;
 		callbackdata = malloc(size+taintsize); //freed by CALLBACK
 		int* idata = (int*)callbackdata;
 		idata[0] = (int)chars;
+		idata[1] = strsize;
 		ALOGD("dalvikP=%08x", idata[0]);
-		memcpy(&idata[1], chars, 8*strsize);
+		memcpy(&idata[2], chars, strsize);
 		if (taint != 0) {
-			memset(&idata[2+2*strsize], taint, 2*strsize);
-			memset(&idata[1+2*strsize], 0, 4);
+			memset(&idata[4+4*strsize], taint, 4*strsize);
+			memset(&idata[4+4*strsize], 0, 4);
 		} else
-			memset(&idata[1+2*strsize], 0, 4+8*strsize);
+			memset(&idata[1+2*strsize], 0, 4+4*strsize);
 	}
 
 	void BpWrapper::callNewStringUTF() {
@@ -557,7 +559,8 @@ namespace android{
 	}
 
 	void BpWrapper::callDeleteLocalRef() {
-		jobject jobj = *((jobject*)replydata);
+		jobject jobj = *(jobject*)replydata;
+		ALOGD("deleting local ref for jobj=%08x", (int)jobj);
 		jniEnv->DeleteLocalRef(jobj);
 		size = 0;
 		taintsize = 0;
@@ -1262,9 +1265,9 @@ namespace android{
 		char* utf = (char*)&idata[3];
 		u4 taint = 0;
 		ALOGD("ReleaseStringUTFChars received dalvikP=%08x, length=%d, utf=%s", (int)dalvikP, length, utf);
-		memcpy(dalvikP, utf, length*8);
+		memcpy(dalvikP, utf, length);
 		ALOGD("copied chars back");
-		for (int j=0; j<2*length; j++) taint |= idata[j+2*length+6];
+		for (int j=0; j<4*length; j++) taint |= idata[j+4*length+6];
 		jniEnv->ReleaseTaintedStringUTFChars(jstr, taint, dalvikP);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
