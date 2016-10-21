@@ -46,10 +46,10 @@ namespace android{
 		ALOGD("dalvikP=%08x", idata[0]);
 		memcpy(&idata[2], chars, strsize);
 		if (taint != 0) {
-			memset(&idata[4+4*strsize], taint, 4*strsize);
-			memset(&idata[4+4*strsize], 0, 4);
+			memset(&idata[4+(strsize+3)/4], taint, strsize/4);
+			memset(&idata[2+(strsize+3)/4], 0, 4);
 		} else
-			memset(&idata[1+2*strsize], 0, 4+4*strsize);
+			memset(&idata[2+(strsize+3)/4], 0, 2+strsize/4);
 	}
 
 	void BpWrapper::callNewStringUTF() {
@@ -1140,7 +1140,7 @@ namespace android{
 		int charlength = (replylength - 12)/4;
 		ALOGD("charlength = %d", charlength);
 		u4 taint = 0;
-		for (int i=0; i<charlength; i++)
+		for (int i=0; i<(charlength+1)/2; i++)
 			taint |= tdata[i+3];
 		memcpy(dalvikP, chars, strlen*sizeof(jchar));
 		jniEnv->ReleaseTaintedStringChars(jstr, taint, dalvikP);
@@ -1154,6 +1154,8 @@ namespace android{
 		const jchar* chars = (const jchar*)&idata[1];
 		jstring jstr = (jstring)idata[1+(strlen+1)/2];
 		jchar* dalvikP = (jchar*)idata[2+(strlen+1)/2];
+		ALOGD("releaseStringCritical: received strlen=%d, jstr=%08x, dalvikP=%08x",
+			strlen, (int)jstr, (int)dalvikP);
 		memcpy(dalvikP, chars, strlen*sizeof(jchar));
 		u4 taint = 0;
 		for (int j=0; j<(strlen+1)/2; j++) taint |= idata[3+(strlen+1)/2+j];
@@ -1267,7 +1269,8 @@ namespace android{
 		ALOGD("ReleaseStringUTFChars received dalvikP=%08x, length=%d, utf=%s", (int)dalvikP, length, utf);
 		memcpy(dalvikP, utf, length);
 		ALOGD("copied chars back");
-		for (int j=0; j<4*length; j++) taint |= idata[j+4*length+6];
+		for (int j=0; j<length/4; j++) taint |= idata[j+length/4+6];
+		ALOGD("chars taint=%08x", taint);
 		jniEnv->ReleaseTaintedStringUTFChars(jstr, taint, dalvikP);
 		size = taintsize = 0;
 		callbackdata = malloc(size);
@@ -1282,13 +1285,13 @@ namespace android{
 		const jchar* result = jniEnv->GetTaintedStringCritical(jstr, &taint, 0);
 		ALOGD("GetTaintedStringCritical: %08x (taint=%08x)", (int)result, taint);
 		int strlen = jniEnv->GetStringLength(jstr);
-		size = sizeof(jchar*)+sizeof(int)+strlen*sizeof(jchar);
+		size = 2*sizeof(int)+strlen*sizeof(jchar);
 		taintsize = size;
 		callbackdata = malloc(size);
 		idata = (int*)callbackdata;
 		idata[0] = (int)result;
 		idata[1] = strlen;
-		memcpy(&idata[2], result, size);
+		memcpy(&idata[2], result, strlen*sizeof(jchar));
 		for (int j=0; j<strlen/2; j++)
 			idata[4+strlen/2+j] = taint;
 	}

@@ -2652,7 +2652,7 @@ void ReleaseStringChars(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 	}
 	//ALOGD("found string map entry at %08x", (int)s);
 	//ALOGD("with length=%d, dalvikP=%08x, chars=%s", s->length, (int)(s->dalvikP), s->wrapperP);
-	int size = sizeof(jstr) + sizeof(s->dalvikP) + sizeof(s->length) + sizeof(jchar)*s->length;
+	int size = 3*sizeof(int) + sizeof(jchar)*s->length;
 	int* data = (int*)malloc(size);
 	//ALOGD("allocated memory of size %d to %08x", size, (int*)data);
 	data[0] = (int)jstr;
@@ -3533,6 +3533,7 @@ static const jchar* GetStringCritical(JNIEnvMod* env, jstring jstr, jboolean* is
 	const void* r = em->jniCall.param_data;
 	int* idata = (int*)em->jniCall.param_data;
 	int strlen = idata[1];
+	ALOGD("received dalvikP=%08x, strlen=%d", idata[0], strlen);
 	jchar* result = (jchar*)malloc(strlen*sizeof(jchar)+1);
 	memcpy(result, &idata[2], strlen*sizeof(jchar));
 	em->addStringChars(idata[0], strlen, result);
@@ -3555,13 +3556,15 @@ void ReleaseStringCritical(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 	}
 	//ALOGD("found string map entry at %08x", s);
 	//ALOGD("with length=%d, dalvikP=%08x, chars=%s", s->length, s->dalvikP, s->wrapperP);
-	int size = sizeof(jstr) + sizeof(s->dalvikP) + sizeof(s->length) + sizeof(jchar)*s->length;
+	int strlen = s->length;
+	if (strlen % 2 == 1) strlen++;
+	int size = sizeof(jstr) + sizeof(s->dalvikP) + sizeof(s->length) + sizeof(jchar)*strlen;
 	int* data = (int*)malloc(size);
 	//ALOGD("allocated memory of size %d to %08x", size, (int*)data);
 	data[0] = s->length;
-	memcpy(&data[1], chars, s->length/2);
-	data[1+(s->length+1)/2] = (int)jstr;
-	data[2+(s->length+1)/2] = s->dalvikP;
+	memcpy(&data[1], chars, strlen/2);
+	data[1+strlen/2] = (int)jstr;
+	data[2+strlen/2] = s->dalvikP;
 	em->deleteCharsEntry(chars);
     em->jniCall.function = 57;
     em->jniCall.taintsize = sizeof(s->length) + sizeof(jchar)*s->length;
