@@ -3409,7 +3409,7 @@ static jint MonitorExit(JNIEnvMod* env, jobject jobj) {
 
 static jint GetJavaVM(JNIEnvMod* env, JavaVM** vm) {
 	ALOGD("GetJavaVM(env=%08x, vm=%08x)", (int)env, (int)vm);
-	*vm = (JavaVM*)&gInvokeInterface;
+	*vm = ((JNIEnvModExt*)env)->execManager->vm;
     jint result = (*vm == NULL) ? JNI_ERR : JNI_OK;
 	ALOGD("GetJavaVM -> %d", result);
 	return result;
@@ -4004,9 +4004,10 @@ JNIEnvMod* dvmCreateJNIEnvMod() {
     return (JNIEnvMod*)newEnv;
 }
 
-JavaVM* wrCreateJavaVM() {
+JavaVM* wrCreateJavaVM(JNIEnvModExt* env) {
 	JavaVM* vm = (JavaVM*) malloc(sizeof(JavaVM));
 	vm->functions = &gInvokeInterface;
+	env->execManager->vm = vm;
 	return vm;
 }
 
