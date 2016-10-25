@@ -3,6 +3,7 @@
 
 #include <binder/IInterface.h>
 #include <IWrapper.h>
+#include <utils/CallStack.h>
 
 namespace android {
 
@@ -183,6 +184,7 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void* replytaint;
 	void* callbackdata;
 	int size, taintsize, replylength;
+    CallStack *cs;
 
     public:
         BpWrapper(const sp<IBinder>& impl);

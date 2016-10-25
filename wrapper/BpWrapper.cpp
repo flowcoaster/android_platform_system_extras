@@ -3,6 +3,7 @@
 #include <IWrapper.h>
 #include "utils.h"
 #include "JniEnvMod.h"
+#include <utils/CallStack.h>
 
 #define LOG_TAG "BpWrapper=Client"
 
@@ -153,7 +154,7 @@ namespace android{
 		jniEnv->ExceptionDescribe();
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 		ALOGD("ExceptionDescribe()->.");
 	}
 
@@ -161,7 +162,7 @@ namespace android{
 		jniEnv->ExceptionClear();
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 		ALOGD("ExceptionClear()->.");
 	}
 
@@ -186,7 +187,7 @@ namespace android{
 		taintsize = 0;
 		callbackdata = malloc(size);
 		memcpy(callbackdata, &result, size);
-		ALOGD("GetMethodID()->%08x", (int)result);
+		ALOGD("GetMethodID()->%08x (size = %d)", (int)result, size);
 	}
 
 	void BpWrapper::callGetFieldID() {
@@ -336,7 +337,7 @@ namespace android{
 		ALOGD("SetObjectTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, (int)value, taint);
 		jniEnv->SetObjectTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	//with taint support
@@ -348,7 +349,7 @@ namespace android{
 		jniEnv->SetBooleanTaintedField(jobj, fieldID, value, taint);
 		ALOGD("Field is set, returning...");
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetByteField() {
@@ -357,7 +358,7 @@ namespace android{
 		ALOGD("SetByteTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetByteTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetCharField() {
@@ -366,7 +367,7 @@ namespace android{
 		ALOGD("SetCharTaintedField: Field %08x to %c with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetCharTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetShortField() {
@@ -375,7 +376,7 @@ namespace android{
 		ALOGD("SetShortTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetShortTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetIntField() {
@@ -384,7 +385,7 @@ namespace android{
 		ALOGD("SetIntTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetIntTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetLongField() {
@@ -393,7 +394,7 @@ namespace android{
 		ALOGD("SetLongTaintedField: Field %08x to %08x with taint %08x", (int)fieldID, (int)value, taint);
 		jniEnv->SetLongTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetFloatField() {
@@ -402,7 +403,7 @@ namespace android{
 		ALOGD("SetFloatTaintedField: Field %08x to %f with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetFloatTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetDoubleField() {
@@ -411,7 +412,7 @@ namespace android{
 		ALOGD("SetDoubleTaintedField: Field %08x to %f with taint %08x", (int)fieldID, value, taint);
 		jniEnv->SetDoubleTaintedField(jobj, fieldID, value, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 #define SETSTATIC_GETDATA() \
@@ -428,7 +429,7 @@ namespace android{
 		ALOGD("SetStaticObjectTaintedField: Field %08x to %08x", (int)fieldID, (int)val);
 		jniEnv->SetStaticObjectTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetStaticBooleanField() {
@@ -438,7 +439,7 @@ namespace android{
 		//jniEnv->SetStaticBooleanField(jc, fieldID, val);
 		jniEnv->SetStaticBooleanTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetStaticByteField() {
@@ -448,7 +449,7 @@ namespace android{
 		//jniEnv->SetStaticByteField(jc, fieldID, val);
 		jniEnv->SetStaticByteTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetStaticCharField() {
@@ -458,7 +459,7 @@ namespace android{
 		//jniEnv->SetStaticCharField(jc, fieldID, val);
 		jniEnv->SetStaticCharTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetStaticShortField() {
@@ -468,7 +469,7 @@ namespace android{
 		//jniEnv->SetStaticShortField(jc, fieldID, val);
 		jniEnv->SetStaticShortTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetStaticIntField() {
@@ -478,7 +479,7 @@ namespace android{
 		//jniEnv->SetStaticIntField(jc, fieldID, val);
 		jniEnv->SetStaticIntTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetStaticLongField() {
@@ -488,7 +489,7 @@ namespace android{
 		//jniEnv->SetStaticLongField(jc, fieldID, val);
 		jniEnv->SetStaticLongTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetStaticFloatField() {
@@ -498,7 +499,7 @@ namespace android{
 		//jniEnv->SetStaticFloatField(jc, fieldID, val);
 		jniEnv->SetStaticFloatTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetStaticDoubleField() {
@@ -508,7 +509,7 @@ namespace android{
 		//jniEnv->SetStaticDoubleField(jc, fieldID, val);
 		jniEnv->SetStaticDoubleTaintedField(jc, fieldID, val, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callGetObjectClass() {
@@ -555,7 +556,7 @@ namespace android{
 		jniEnv->DeleteGlobalRef(jobj);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callDeleteLocalRef() {
@@ -564,7 +565,8 @@ namespace android{
 		jniEnv->DeleteLocalRef(jobj);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
+        ALOGD("callDeleteLocalRef: callbackdata == %p", callbackdata);
 	}
 
 	void BpWrapper::callIsSameObject() {
@@ -722,7 +724,7 @@ namespace android{
 		jniEnv->CallVoidTaintedMethodA(jobj, objTaint, methodID, &resultTaint, args, paramTaints);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 #define UNPACK_CALLVIRTUALMETHOD() \
@@ -815,7 +817,7 @@ namespace android{
 		jniEnv->CallNonvirtualVoidTaintedMethodA(jobj, objTaint, jc, 
 			methodID, &resultTaint, args, paramTaints);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 #define UNPACK_CALLSTATICMETHOD() \
@@ -833,7 +835,7 @@ namespace android{
 		UNPACK_CALLSTATICMETHOD();
 		jniEnv->CallStaticVoidTaintedMethodA(jc, methodID, &resultTaint, args, paramTaints);
 		taintsize = size = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	//with taint support
@@ -910,7 +912,7 @@ namespace android{
 		jniEnv->SetTaintedBooleanArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetByteArrayRegion() {
@@ -924,7 +926,7 @@ namespace android{
 		jniEnv->SetTaintedByteArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetCharArrayRegion() {
@@ -938,7 +940,7 @@ namespace android{
 		jniEnv->SetTaintedCharArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetShortArrayRegion() {
@@ -952,7 +954,7 @@ namespace android{
 		jniEnv->SetTaintedShortArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetIntArrayRegion() {
@@ -966,7 +968,7 @@ namespace android{
 		jniEnv->SetTaintedIntArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetLongArrayRegion() {
@@ -980,7 +982,7 @@ namespace android{
 		jniEnv->SetTaintedLongArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetFloatArrayRegion() {
@@ -994,7 +996,7 @@ namespace android{
 		jniEnv->SetTaintedFloatArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callSetDoubleArrayRegion() {
@@ -1008,7 +1010,7 @@ namespace android{
 		jniEnv->SetTaintedDoubleArrayRegion(jarr, start, len, buf, taint);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 #define COPYOUT_GETARRAYREGION() \
@@ -1145,7 +1147,7 @@ namespace android{
 		memcpy(dalvikP, chars, strlen*sizeof(jchar));
 		jniEnv->ReleaseTaintedStringChars(jstr, taint, dalvikP);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseStringCritical() {
@@ -1161,7 +1163,7 @@ namespace android{
 		for (int j=0; j<(strlen+1)/2; j++) taint |= idata[3+(strlen+1)/2+j];
 		jniEnv->ReleaseTaintedStringCritical(jstr, taint, dalvikP);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callFromReflectedMethod() {
@@ -1256,7 +1258,7 @@ namespace android{
 		memcpy(dalvikP, data, size);
 		jniEnv->ReleasePrimitiveArrayCritical(jarr, data, 2);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseStringUTFChars() {
@@ -1273,7 +1275,7 @@ namespace android{
 		ALOGD("chars taint=%08x", taint);
 		jniEnv->ReleaseTaintedStringUTFChars(jstr, taint, dalvikP);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 		ALOGD("<- release string utf chars");
 	}
 
@@ -1301,7 +1303,7 @@ namespace android{
 		jniEnv->DeleteWeakGlobalRef(jw);
 		size = 0;
 		taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 #define GENERIC_GETARRAYELEMENTS() \
@@ -1395,56 +1397,56 @@ namespace android{
 		jbooleanArray jarr = *((jbooleanArray*)replydata);
 		jniEnv->ReleaseBooleanArrayElements(jarr, 0, 0);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseByteArrayElements() {
 		jbyteArray jarr = *((jbyteArray*)replydata);
 		jniEnv->ReleaseByteArrayElements(jarr, 0, 0);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseCharArrayElements() {
 		jcharArray jarr = *((jcharArray*)replydata);
 		jniEnv->ReleaseCharArrayElements(jarr, 0, 0);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseShortArrayElements() {
 		jshortArray jarr = *((jshortArray*)replydata);
 		jniEnv->ReleaseShortArrayElements(jarr, 0, 0);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseIntArrayElements() {
 		jintArray jarr = *((jintArray*)replydata);
 		jniEnv->ReleaseIntArrayElements(jarr, 0, 0);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseLongArrayElements() {
 		jlongArray jarr = *((jlongArray*)replydata);
 		jniEnv->ReleaseLongArrayElements(jarr, 0, 0);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseFloatArrayElements() {
 		jfloatArray jarr = *((jfloatArray*)replydata);
 		jniEnv->ReleaseFloatArrayElements(jarr, 0, 0);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseDoubleArrayElements() {
 		jdoubleArray jarr = *((jdoubleArray*)replydata);
 		jniEnv->ReleaseDoubleArrayElements(jarr, 0, 0);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callNewWeakGlobalRef() {
@@ -1777,6 +1779,7 @@ namespace android{
 		idata = (int*)callbackdata;
 		idata[0] = (int)result;
 		idata[1] = taint;
+        ALOGD("end callGetObjectArrayElement");
 	}
 
 	void BpWrapper::callSetObjectArrayElement() {
@@ -1789,7 +1792,7 @@ namespace android{
 			(int)jarr, index, (int)jobj, taint);
 		jniEnv->SetTaintedObjectArrayElement(jarr, index, jobj, taint);
 		size = taintsize = 0;
-		callbackdata = malloc(size);
+		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callMonitorEnter() {
@@ -1848,6 +1851,10 @@ namespace android{
 
 	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
 	    int function, taintsize;
+
+        cs->update(0, 100);
+        cs->dump("BpWrapper: ");
+        
 	    reply->readInt32(&function);
 	    reply->readInt32(&replylength);
 	    reply->readInt32(&taintsize);
@@ -2040,6 +2047,7 @@ namespace android{
 // Client
         BpWrapper::BpWrapper(const sp<IBinder>& impl) : BpInterface<IWrapper>(impl) {
             ALOGD("BpWrapper::BpWrapper()");
+            cs = new CallStack();
         }
 
 	void BpWrapper::setJniEnv(JNIEnvMod* env) {
@@ -2149,11 +2157,18 @@ namespace android{
 	    data.writeInt32(function);
 	    data.writeInt32(length);
 		data.writeInt32(taintlength);
-	    data.write(rawdata, length);
-		if (taintlength > 0) data.write(rawdata+length, taintlength);
+        if(length > 0) {
+          data.write(rawdata, length);
+          if (taintlength > 0)
+            data.write(rawdata+length, taintlength);
+        }
 	    remote()->transact(CALLBACK, data, &reply);
-		ALOGD("now freeing rawdata @%08x", (int)rawdata);
-	    free (rawdata);
+        if(length > 0) {
+          ALOGD("now freeing rawdata @%08x", (int)rawdata);
+          free (rawdata);
+        } else {
+          ALOGD("no rawdata - nothing to be freed");
+        }
 	    int execStatus = reply.readInt32();
 	    ALOGD("Status of execution manager is now: %d", execStatus);
 	    if (execStatus == 3) {
