@@ -80,6 +80,8 @@ namespace android {
 		// struct with data for exec (because the thread only gets a void*)
 		platformInvoke_t platformInvoke;
 
+		JavaVM* vm;
+
 		// struct with data for calling JNI functions
 		jniCall_t jniCall;
 

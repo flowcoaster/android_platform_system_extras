@@ -1470,7 +1470,7 @@ struct _JavaVM {
 #define JNI_TRUE    1
 
 JNIEnvMod* dvmCreateJNIEnvMod();
-JavaVM* wrCreateJavaVM();
+JavaVM* wrCreateJavaVM(JNIEnvModExt* env);
 
 struct Callback {
 	int code;
