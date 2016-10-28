@@ -7,6 +7,15 @@
 
 namespace android {
 
+struct callback_t {
+	int function;
+	int length;
+	int taintlength;
+	JValTaint* res;
+	void* rawdata;
+};
+
+
 // Client
 class BpWrapper : public BpInterface<IWrapper> {
     private:
@@ -179,12 +188,15 @@ class BpWrapper : public BpInterface<IWrapper> {
 	void callNewDirectByteBuffer();
 	void callGetDirectBufferAddress();
 	void callGetDirectBufferCapacity();
-	int handleJNIRequest(JValTaint* res, Parcel* reply);
+	void handleJNIRequest(JValTaint* res, Parcel* reply);
+	int doCallbackTransaction(int function, int length, void* rawdata,
+		int taintlength, JValTaint* res, Parcel* reply);
 	void* replydata;
 	void* replytaint;
 	void* callbackdata;
 	int size, taintsize, replylength;
     CallStack *cs;
+	callback_t* cbdata;
 
     public:
         BpWrapper(const sp<IBinder>& impl);

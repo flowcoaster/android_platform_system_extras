@@ -15,7 +15,7 @@ class BnWrapper : public BnInterface<IWrapper> {
     protected:
 	int callerPid, callerUid;
 //#ifdef WITH_DALVIK_BINDER_SERVICE
-	JNIEnvMod* jniEnv;
+	JNIEnvModExt* jniEnv;
 	JavaVM* vm;
 //#endif
 

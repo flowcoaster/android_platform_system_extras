@@ -1469,7 +1469,7 @@ struct _JavaVM {
 #define JNI_FALSE   0
 #define JNI_TRUE    1
 
-JNIEnvMod* dvmCreateJNIEnvMod();
+JNIEnvModExt* dvmCreateJNIEnvMod();
 JavaVM* wrCreateJavaVM(JNIEnvModExt* env);
 
 struct Callback {

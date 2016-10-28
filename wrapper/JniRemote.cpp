@@ -2919,7 +2919,7 @@ static jdoubleArray NewDoubleArray(JNIEnvMod* env, jsize length) {
 	int* idata = (int*)em->jniCall.param_data; \
 	size = idata[0]; \
 	int dalvikP = idata[1]; \
-	ALOGD("GetPrimitiveArrayCritical received size=%d, dalvikP=%08x", size, dalvikP);\
+	ALOGD("GetPrimitiveArrayElements received size=%d, dalvikP=%08x", size, dalvikP);\
 	em->addArray(jarr, size, dalvikP);\
 	void* result = malloc(size);\
 	memcpy(result, &idata[2], size);
@@ -3304,7 +3304,7 @@ static void SetIntArrayRegion(JNIEnvMod* env, jintArray jarr, jsize start, jsize
 
 //code 162
 static void SetLongArrayRegion(JNIEnvMod* env, jlongArray jarr, jsize start, jsize len, const jlong* buf) {
-	ALOGD("SetIntArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+	ALOGD("SetLongArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
 		(int)env, (int)jarr, start, len, (int) buf);
 	ARRAYREGION_COPYOUT();
     em->jniCall.function = 162;
@@ -3324,7 +3324,7 @@ static void SetFloatArrayRegion(JNIEnvMod* env, jfloatArray jarr, jsize start, j
 
 //code 163
 static void SetDoubleArrayRegion(JNIEnvMod* env, jdoubleArray jarr, jsize start, jsize len, const jdouble* buf) {
-	ALOGD("SetFloatArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
+	ALOGD("SetDoubleArrayRegion(env=%08x, jarr=%08x, start=%08x, len=%08x, buf=%08x)",
 		(int)env, (int)jarr, start, len, (int) buf);
 	ARRAYREGION_COPYOUT();
     em->jniCall.function = 163;
@@ -3453,18 +3453,6 @@ static void GetStringUTFRegion(JNIEnvMod* env, jstring jstr, jsize start, jsize 
 	free(data);
 }
 
-/*static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jshortArray jarr, jboolean* isCopy) {
-	ALOGD("GetShortArrayCritical");
-	void* result = malloc(8);
-	return result;
-}
-
-static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jbyteArray jarr, jboolean* isCopy) {
-	ALOGD("GetByteArrayCritical");
-	void* result = malloc(8);
-	return result;
-}*/
-
 //code 65
 static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, jboolean* isCopy) {
 	ALOGD("jniEnvMod->GetPrimitiveArrayCritical(env=%08x, jarr=%08x, isCopy)", (int)env, (int)jarr);
@@ -3480,8 +3468,6 @@ static void* GetPrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, jboolean* is
 	int dalvikP = idata[1];
 	ALOGD("GetPrimitiveArrayCritical received size=%d, dalvikP=%08x", size, dalvikP);
 	em->addArray(jarr, size, dalvikP);
-	//TODO: too fragile? void* might be freed by BnWrapper?
-	//void* result = (void*)(ext->execManager->jniCall.param_data+sizeof(int)+sizeof(dalvikP));
 	void* result = malloc(size);
 	memcpy(result, &idata[2], size);
 	return result;
@@ -3506,9 +3492,10 @@ static void ReleasePrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, void* arr
 	int* data = (int*)malloc(size);
 	data[0] = (int)jarr;
 	data[1] = at->length;
-	memcpy(data, &jarr, sizeof(jarr));
-	memcpy(data+sizeof(jarr), &(at->length), 2*sizeof(int));
-	memcpy(&data[2], array, at->length);
+	data[2] = at->dalvikP;
+	//memcpy(data, &jarr, sizeof(jarr));
+	//memcpy(data+sizeof(jarr), &(at->length), 2*sizeof(int));
+	memcpy(&data[3], array, at->length);
     em->jniCall.function = 66;
     em->jniCall.taintsize = 0;
     em->jniCall.length = size;
@@ -3670,6 +3657,11 @@ static jobjectRefType GetObjectRefType(JNIEnvMod* env, jobject jobj) {
     em->reqJniCall();
 	jobjectRefType result = *(jobjectRefType*)(em->jniCall.param_data);
 	return result;
+}
+
+static jint GetUTFCharsByteLength(JNIEnvMod* env, jstring jstr) {
+	ALOGE("GetUTFCharsByteLength not supported from Valgrind!");
+	return -1;
 }
 
 //function table just like in dalvik/vm/Jni.cpp
@@ -3990,24 +3982,84 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
 	NULL, // SetStaticFloatTaintedField,
 	NULL, // SetStaticDoubleTaintedField
     
-    NULL, // NewTaintedStringUTF,
-	NULL  // GetTaintedStringUTFChars,
+	NULL, // GetTaintedStringLength
+	NULL, // GetTaintedStringChars
+	NULL, // ReleaseTaintedStringChars
 
+    NULL, // NewTaintedStringUTF
+	NULL, // GetTaintedStringUTFChars
+	NULL, // ReleaseTaintedStringUTFChars
+	NULL,  // NewTaintedObjectArray
+
+	NULL, // GetTaintedObjectArrayElement
+	NULL, // SetTaintedObjectArrayElement
+
+	NULL, // GetTaintedBooleanArrayElements
+	NULL, // GetTaintedByteArrayElements
+	NULL, // GetTaintedCharArrayElements
+	NULL, // GetTaintedShortArrayElements
+	NULL, // GetTaintedIntArrayElements
+	NULL, // GetTaintedLongArrayElements
+	NULL, // GetTaintedFloatArrayElements
+	NULL, // GetTaintedDoubleArrayElements
+
+	NULL, // ReleaseTaintedBooleanArrayElements
+	NULL, // ReleaseTaintedByteArrayElements
+	NULL, // ReleaseTaintedCharArrayElements
+	NULL, // ReleaseTaintedShortArrayElements
+	NULL, // ReleaseTaintedIntArrayElements
+	NULL, // ReleaseTaintedLongArrayElements
+	NULL, // ReleaseTaintedFloatArrayElements
+	NULL, // ReleaseTaintedDoubleArrayElements
+
+	NULL, // GetTaintedBooleanArrayRegion
+	NULL, // GetTaintedByteArrayRegion
+	NULL, // GetTaintedCharArrayRegion
+	NULL, // GetTaintedShortArrayRegion
+	NULL, // GetTaintedIntArrayRegion
+	NULL, // GetTaintedLongArrayRegion
+	NULL, // GetTaintedFloatArrayRegion
+	NULL, // GetTaintedDoubleArrayRegion
+
+	NULL, // SetTaintedBooleanArrayRegion
+	NULL, // SetTaintedByteArrayRegion
+	NULL, // SetTaintedCharArrayRegion
+	NULL, // SetTaintedShortArrayRegion
+	NULL, // SetTaintedIntArrayRegion
+	NULL, // SetTaintedLongArrayRegion
+	NULL, // SetTaintedFloatArrayRegion
+	NULL, // SetTaintedDoubleArrayRegion
+
+	NULL, // GetTaintedStringRegion
+	NULL, // GetTaintedStringUTFRegion
+
+	NULL, // GetTaintedPrimitiveArrayCritical
+	NULL, // ReleaseTaintedPrimitiveArrayCritical
+
+	NULL, // GetTaintedStringCritical
+	NULL, // ReleaseTaintedStringCritical
+
+	NULL, // RegisterTaintedNatives
+	GetUTFCharsByteLength
 };
 
-JNIEnvMod* dvmCreateJNIEnvMod() {
+JNIEnvModExt* dvmCreateJNIEnvMod() {
     JNIEnvModExt* newEnv = (JNIEnvModExt*) calloc(1, sizeof(JNIEnvModExt));
     newEnv->funcTable = &gNativeInterface;
 
     //create Execution Manager
     newEnv->execManager = new ExecutionManager();
-    return (JNIEnvMod*)newEnv;
+	ALOGD("execManager is now %08x", (int)newEnv->execManager);
+    return newEnv;
 }
 
 JavaVM* wrCreateJavaVM(JNIEnvModExt* env) {
+	ALOGD("Creating Java VM Pointer (env=%08x)", (int)env);
 	JavaVM* vm = (JavaVM*) malloc(sizeof(JavaVM));
 	vm->functions = &gInvokeInterface;
-	env->execManager->vm = vm;
+	ExecutionManager* execManager = env->execManager;
+	ALOGD("execManager=%08x", (int)execManager);
+	execManager->vm = vm;
 	return vm;
 }
 

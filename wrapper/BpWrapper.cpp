@@ -13,6 +13,30 @@
 
 namespace android{
 
+	int BpWrapper::doCallbackTransaction(int function, int length, void* rawdata,
+		int taintlength, JValTaint* res, Parcel* reply) {
+		ALOGD("callback function=%d, length=%d, data=%08x, taintlength=%d",
+			function, length, (int)rawdata, taintlength);
+	    Parcel data;
+	    data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
+	    data.writeInt32(function);
+	    data.writeInt32(length);
+		data.writeInt32(taintlength);
+        if(length > 0) {
+          data.write(rawdata, length);
+          if (taintlength > 0)
+            data.write(rawdata+length, taintlength);
+        }
+	    remote()->transact(CALLBACK, data, reply);
+        if(length > 0) {
+          ALOGD("now freeing rawdata @%08x", (int)rawdata);
+          free (rawdata);
+        } else {
+          ALOGD("no rawdata - nothing to be freed");
+        }
+	    return reply->readInt32();
+	}
+
 	void setResult(JValTaint* res, Parcel* reply) {
 	    status_t status = reply->readInt64(&res->val.j);
 	    int32_t taint = reply->readInt32();
@@ -33,10 +57,12 @@ namespace android{
 		ALOGD("jstr=%08x", (int)jstr);
 		u4 taint = 0;
 		const char* chars = jniEnv->GetTaintedStringUTFChars(jstr, 0, &taint);
-		ALOGD("GetStringUTFChars returns %s; sizeof(*chars)=%d; strlen(chars)=%d",
-			chars, sizeof(*chars), strlen(chars));
+		ALOGD("GetTaintedStringUTFChars returns %s; sizeof(*chars)=%d; strlen(chars)=%d (taint=%08x)",
+			chars, sizeof(*chars), strlen(chars), taint);
 		//size = sizeof(*chars)*strlen(chars)+1;
+		ALOGD("jniEnv=%08x", (int)jniEnv);
 		int strsize = jniEnv->GetUTFCharsByteLength(jstr);
+		//int strsize = 8*strlen(chars);
 		ALOGD("chars needs %d bytes", strsize);
 		size = 2*strsize+sizeof(char*)+sizeof(strsize);
 		taintsize = size;
@@ -1217,7 +1243,6 @@ namespace android{
 
 	void BpWrapper::callGetPrimitiveArrayCritical() {
 		jarray jarr = *((jarray*)replydata);
-		jboolean fake = 0;
 		//ALOGD("GetPrimitiveArrayCritical: jarr=%08x", jarr);
 		const char* sig = jniEnv->GetArrayType(jarr);
 		ALOGD("GetPrimitiveArrayCritical: array type = %s", sig);
@@ -1233,31 +1258,37 @@ namespace android{
 			case 'D': elementSize = sizeof(jlong); break;
 			default: ALOGE("Unknown array type: %c; cannot determine size.", sig[1]);
 		}
-		void* result = jniEnv->GetPrimitiveArrayCritical(jarr, &fake);
+		void* result = jniEnv->GetPrimitiveArrayCritical(jarr, 0);
 		ALOGD("dalvik void pointer: %08x", (int)result);
-		size = jniEnv->GetArrayLength(jarr)*elementSize;
+		int arraysize = jniEnv->GetArrayLength(jarr)*elementSize;
+		size = arraysize + sizeof(size) + sizeof(result);
 		taintsize = 0;
-		callbackdata = malloc(size + sizeof(size) + sizeof(result));
-		memcpy(callbackdata, &size, sizeof(size));
-		memcpy(callbackdata+sizeof(size), &result, sizeof(result));
-		memcpy(callbackdata+sizeof(size)+sizeof(result), result, size);
+		callbackdata = malloc(size);
+		int* idata = (int*)callbackdata;
+		idata[0] = arraysize;
+		idata[1] = (int)result;
+		memcpy(&idata[2], result, arraysize);
 	}
 
 	void BpWrapper::callReleasePrimitiveArrayCritical() {
-		jarray jarr = *((jarray*)replydata);
-		int size = *((int*)(replydata + sizeof(jarr)));
-		void* dalvikP = replydata + sizeof(jarr) + sizeof(int);
-		int dalvikPP = *((int*)(replydata+sizeof(jarr)+sizeof(int)));
-		dalvikP = (void*)dalvikPP;
-		void* data = replydata + sizeof(jarr) + 2*sizeof(int);
-		ALOGD("callReleasePrimitiveArrayCritical: jarr=%08x, size=%d, dalvikP=%08x, dalvikPP=%08x, data=%08x",
-			(int)jarr, size, (int)dalvikP, dalvikPP, (int)data);
-		jshort* iarr = (jshort*)data;
+		int* idata = (int*)replydata;
+		jarray jarr = (jarray)idata[0];
+		int arraysize = idata[1];
+		void* dalvikP = (void*)idata[2];
+		//int dalvikPP = *((int*)(replydata+sizeof(jarr)+sizeof(int)));
+		//dalvikP = (void*)dalvikPP;
+		//void* data = replydata + sizeof(jarr) + 2*sizeof(int);
+		//ALOGD("callReleasePrimitiveArrayCritical: jarr=%08x, size=%d, dalvikP=%08x, dalvikPP=%08x, data=%08x",
+		//	(int)jarr, size, (int)dalvikP, dalvikPP, (int)data);
+		ALOGD("callReleasePrimitiveArrayCritical: jarr=%08x, size=%d, dalvikP=%08x, data=%08x",
+			(int)jarr, arraysize, (int)dalvikP, (int)&idata[3]);
+		jshort* iarr = (jshort*)&idata[3];
 		ALOGD("i[0]=%d, i[1]=%d, i[2]=%d, i[3]=%d, i[4]=%d, i[5]=%d, i[6]=%d",
 			iarr[0], iarr[1], iarr[2], iarr[3], iarr[4], iarr[5], iarr[6]);
-		memcpy(dalvikP, data, size);
-		jniEnv->ReleasePrimitiveArrayCritical(jarr, data, 2);
-		size = taintsize = 0;
+		memcpy(dalvikP, &idata[3], arraysize);
+		jniEnv->ReleasePrimitiveArrayCritical(jarr, dalvikP, 2);
+		size = 0;
+		taintsize = 0;
 		callbackdata = NULL; // malloc(size);
 	}
 
@@ -1289,13 +1320,14 @@ namespace android{
 		int strlen = jniEnv->GetStringLength(jstr);
 		size = 2*sizeof(int)+strlen*sizeof(jchar);
 		taintsize = size;
-		callbackdata = malloc(size);
+		callbackdata = malloc(size+taintsize);
 		idata = (int*)callbackdata;
 		idata[0] = (int)result;
 		idata[1] = strlen;
 		memcpy(&idata[2], result, strlen*sizeof(jchar));
 		for (int j=0; j<strlen/2; j++)
 			idata[4+strlen/2+j] = taint;
+		ALOGD("<- callGetStringCritical (taintsize=%d @%08x)", taintsize, &taintsize);
 	}
 
 	void BpWrapper::callDeleteWeakGlobalRef() {
@@ -1416,7 +1448,8 @@ namespace android{
 
 	void BpWrapper::callReleaseShortArrayElements() {
 		jshortArray jarr = *((jshortArray*)replydata);
-		jniEnv->ReleaseShortArrayElements(jarr, 0, 0);
+		ALOGD("ReleaseShortArrayElements(%08x)", (int)jarr);
+		jniEnv->ReleaseShortArrayElements(jarr, (jshort*)replydata, 0);
 		size = taintsize = 0;
 		callbackdata = NULL; // malloc(size);
 	}
@@ -1849,11 +1882,11 @@ namespace android{
 		callbackdatap[0] = result;
 	}
 
-	int BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
-	    int function, taintsize;
+	void BpWrapper::handleJNIRequest(JValTaint* res, Parcel* reply) {
+	    int function;
 
-        cs->update(0, 100);
-        cs->dump("BpWrapper: ");
+        //cs->update(0, 100);
+        //cs->dump("BpWrapper: ");
         
 	    reply->readInt32(&function);
 	    reply->readInt32(&replylength);
@@ -2037,20 +2070,30 @@ namespace android{
 	    	default: 
 			ALOGE("Unknown function: %d", function);
 			free(replydata);
-			return -1;
+			//return -1;
 	    }
+		ALOGD("taintsize=%d @%08x", taintsize, &taintsize);
 		free(replytaint);
 		free(replydata);
-	    return callback(function, size, callbackdata, taintsize, res);
+		ALOGD("handleJNIRequest setting cbdata: function=%d, callbackdata=%08x, length=%d, taintlength=%d",
+			function, (int)callbackdata, size, taintsize);
+		cbdata->function = function;
+		cbdata->rawdata = callbackdata;
+		cbdata->length = size;
+		cbdata->taintlength = taintsize;
+		cbdata->res = res;
+	    //return callback(function, size, callbackdata, taintsize, res);
 	}
 
 // Client
         BpWrapper::BpWrapper(const sp<IBinder>& impl) : BpInterface<IWrapper>(impl) {
             ALOGD("BpWrapper::BpWrapper()");
             cs = new CallStack();
+			cbdata = (callback_t*)malloc(sizeof(callback_t));
         }
 
 	void BpWrapper::setJniEnv(JNIEnvMod* env) {
+		ALOGD("Wrapper setting jniEnv=%08x", (int)env);
 	    jniEnv = env;
 	}
 
@@ -2134,7 +2177,10 @@ namespace android{
 			usedJni = true;
 			if (execStatus == 2) {
 		    	ALOGD("Execution needs JNI, handling request");
-		    	execStatus = handleJNIRequest(res, replyPtr);
+		    	//execStatus = handleJNIRequest(res, replyPtr);
+				handleJNIRequest(res, &reply);
+				execStatus = doCallbackTransaction(cbdata->function, cbdata->length, cbdata->rawdata,
+				cbdata->taintlength, cbdata->res, &reply);
 	    	} else {
 		    	ALOGE("Unexpected Execution Manager status: %d", execStatus);
 		    	return res;
@@ -2143,17 +2189,17 @@ namespace android{
 
 	    //ExecutionManager::FINISHED
 	    ALOGD("Execution finished, processing result");
-	    if (!usedJni) {
-		ALOGD("No JNI interruptions -> setting result from taintCall");
+	    //if (!usedJni) {
+		//ALOGD("No JNI interruptions -> setting result from taintCall");
 		setResult(res, &reply);
-	    }
+	    //}
 	    ALOGD("returning result=long%lld_int%d", res->val.j, res->val.i);
 	    return res;
 	}
 
 	int BpWrapper::callback(int function, int length, void* rawdata, int taintlength, JValTaint* res) {
-	    Parcel data, reply;
-	    data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
+	    Parcel reply;
+	    /*data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
 	    data.writeInt32(function);
 	    data.writeInt32(length);
 		data.writeInt32(taintlength);
@@ -2168,10 +2214,17 @@ namespace android{
           free (rawdata);
         } else {
           ALOGD("no rawdata - nothing to be freed");
-        }
-	    int execStatus = reply.readInt32();
+        }*/
+	    int execStatus = doCallbackTransaction(function, length, rawdata, taintlength, res, &reply);
 	    ALOGD("Status of execution manager is now: %d", execStatus);
-	    if (execStatus == 3) {
+		while(execStatus == 2) {
+			handleJNIRequest(res, &reply);
+			execStatus = doCallbackTransaction(cbdata->function, cbdata->length, cbdata->rawdata,
+				cbdata->taintlength, cbdata->res, &reply);
+		}
+		if (execStatus != 3) ALOGE("Unexpected status: %d", execStatus);
+
+	    /*if (execStatus == 3) {
 			ALOGD("finished after JNI Call -> setting result from callback");
 			setResult(res, &reply);
 	    } else if (execStatus == 2) {
@@ -2179,7 +2232,7 @@ namespace android{
 			execStatus = handleJNIRequest(res, &reply);
 	    } else {
 			ALOGE("Unexpected status: %d", execStatus);
-	    }
+	    }*/
 	    return execStatus;
 	}
 

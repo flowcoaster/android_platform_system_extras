@@ -15,7 +15,7 @@ BnWrapper::BnWrapper(int pid, int uid) {
     callerPid = pid;
     callerUid = uid;
     jniEnv = dvmCreateJNIEnvMod();
-	vm = wrCreateJavaVM((JNIEnvModExt*)&jniEnv);
+	vm = wrCreateJavaVM(jniEnv);
 }
 
 bool BnWrapper::checkAuthorization(int pid, int uid) {
@@ -33,7 +33,7 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
     switch(code) {
 	case CALL: {
 	    //ALOGD("JniEnv->execManager=%p", jniEnv->execManager);
-	    jniEnv->GetStringUTFChars(0, 0);
+	    //jniEnv->GetStringUTFChars(0, 0);
 	    const char* callName = data.readCString();
 	    const char* callMethod = data.readCString();
 	    int numParams = data.readInt32();
