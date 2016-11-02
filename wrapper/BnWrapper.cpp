@@ -31,46 +31,6 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
     data.checkInterface(this);
 
     switch(code) {
-	case CALL: {
-	    //ALOGD("JniEnv->execManager=%p", jniEnv->execManager);
-	    //jniEnv->GetStringUTFChars(0, 0);
-	    const char* callName = data.readCString();
-	    const char* callMethod = data.readCString();
-	    int numParams = data.readInt32();
-	    Vector<int> taints, paramsizes;
-	    int size = 0, taint = 0;
-	    Vector<int> params;
-	    for (int i=0; i<numParams; i++) {
-		size = data.readInt32();
-		taint = data.readInt32();
-		taints.push(taint);
-		int temp; //void* temp;
-		temp = data.readInt32(); //data.read(temp, size);
-		params.push(temp);
-	    }
-	    void* handle = dlopen(callName, RTLD_LAZY);
-	    ASSERT(handle != 0);
-	    typedef int (*sum_tt)(int, int);
-	    dlerror(); //flush errors
-	    //aout << "flushed errors; creating symbol\n";
-	    sum_tt sum = (sum_tt) dlsym(handle, callMethod);
-	    const char *dl_error = dlerror();
-	    if (dl_error) {
-		//aout << "error: " << dl_error; endl(aout);
-		dlclose(handle);
-	    }
-	    int x = params.top(); params.pop();
-	    int y = params.top(); params.pop();
-	    int i = (int) sum(x, y);
-	    //aout << "sum= " << i << " \n";
-	    dlclose(handle);
-	    //aout << "closed library\n";
-	    reply->writeInt32(i);
-	    for (int ii=0; ii<numParams; ii++) reply->writeInt32(0); //write placeholders for taint
-	    ALOGD("BnWrapper::onTransact call reply parcel:");
-            //reply->print(PLOG); endl(PLOG);
-	    return NO_ERROR;
-	} break;
 	case ADD_LIB: {
 	    //check if caller is the correct process
 	    /*if (!checkAuthorization(IPCThreadState::self()->getCallingPid(),
@@ -257,7 +217,7 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 			// padding for taint values
 	    	for (int i=0; i<myExecManager->platformInvoke.argc; i++) reply->writeInt32((int)0);		
 	    }
-		ALOGD("now freeing return data pointer @%08x", rawdata);
+		ALOGD("now freeing return data pointer @%08x", (int)rawdata);
 	    free(rawdata);
 	    return NO_ERROR;
 	} case CHANGE_FUNC: {

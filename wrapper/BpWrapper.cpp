@@ -2072,7 +2072,7 @@ namespace android{
 			free(replydata);
 			//return -1;
 	    }
-		ALOGD("taintsize=%d @%08x", taintsize, &taintsize);
+		//ALOGD("taintsize=%d @%08x", taintsize, &taintsize);
 		free(replytaint);
 		free(replydata);
 		ALOGD("handleJNIRequest setting cbdata: function=%d, callbackdata=%08x, length=%d, taintlength=%d",
@@ -2082,7 +2082,6 @@ namespace android{
 		cbdata->length = size;
 		cbdata->taintlength = taintsize;
 		cbdata->res = res;
-	    //return callback(function, size, callbackdata, taintsize, res);
 	}
 
 // Client
@@ -2095,32 +2094,6 @@ namespace android{
 	void BpWrapper::setJniEnv(JNIEnvMod* env) {
 		ALOGD("Wrapper setting jniEnv=%08x", (int)env);
 	    jniEnv = env;
-	}
-
-	int32_t BpWrapper::call(char* library, char* method, Vector<void*> params, Vector<int> sizeofparam, Vector<int> taints) {
-#ifdef ASSERT
-	    ASSERT(params.size() == taints.size());
-	    ASSERT(params.size() == sizeofparam.size());
-#else
-	    assert(params.size() == taints.size());
-	    assert(params.size() == sizeofparam.size());
-#endif
-	    Parcel data, reply;
-            data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
-            data.writeCString(library);
-            data.writeCString(method);
-	    int numParams = params.size();
-	    data.writeInt32(numParams);
-	    for (int i=0; i<numParams; i++) {
-		data.writeInt32(sizeofparam.array()[i]);
-		data.writeInt32(taints.array()[i]);
-		data.write(&(params.array()[i]), sizeofparam.array()[i]);
-	    }
-            remote()->transact(CALL, data, &reply);    // asynchronous call
-            int32_t res;
-            status_t status = reply.readInt32(&res);
-            ALOGD("BpWrapper::call = %i (status: %i)", res, status);
-            return res;
 	}
 
 	int32_t BpWrapper::addLib(const char* pathName) {
@@ -2195,45 +2168,6 @@ namespace android{
 	    //}
 	    ALOGD("returning result=long%lld_int%d", res->val.j, res->val.i);
 	    return res;
-	}
-
-	int BpWrapper::callback(int function, int length, void* rawdata, int taintlength, JValTaint* res) {
-	    Parcel reply;
-	    /*data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
-	    data.writeInt32(function);
-	    data.writeInt32(length);
-		data.writeInt32(taintlength);
-        if(length > 0) {
-          data.write(rawdata, length);
-          if (taintlength > 0)
-            data.write(rawdata+length, taintlength);
-        }
-	    remote()->transact(CALLBACK, data, &reply);
-        if(length > 0) {
-          ALOGD("now freeing rawdata @%08x", (int)rawdata);
-          free (rawdata);
-        } else {
-          ALOGD("no rawdata - nothing to be freed");
-        }*/
-	    int execStatus = doCallbackTransaction(function, length, rawdata, taintlength, res, &reply);
-	    ALOGD("Status of execution manager is now: %d", execStatus);
-		while(execStatus == 2) {
-			handleJNIRequest(res, &reply);
-			execStatus = doCallbackTransaction(cbdata->function, cbdata->length, cbdata->rawdata,
-				cbdata->taintlength, cbdata->res, &reply);
-		}
-		if (execStatus != 3) ALOGE("Unexpected status: %d", execStatus);
-
-	    /*if (execStatus == 3) {
-			ALOGD("finished after JNI Call -> setting result from callback");
-			setResult(res, &reply);
-	    } else if (execStatus == 2) {
-			ALOGD("need to handle another JNI request");
-			execStatus = handleJNIRequest(res, &reply);
-	    } else {
-			ALOGE("Unexpected status: %d", execStatus);
-	    }*/
-	    return execStatus;
 	}
 
 	int32_t BpWrapper::changeFunc(int32_t oldHandle, int32_t newHandle) {

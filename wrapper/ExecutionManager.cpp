@@ -132,7 +132,7 @@ namespace android {
             // signal native thread that JNI has been received
             sem_post(&mJniReady);
 
-            ALOGD("Continue waiting for the result of the main task (status: %s)", strStatus(mStatus));
+            //ALOGD("Continue waiting for the result of the main task (status: %s)", strStatus(mStatus));
 
             sem_wait(&mReplyReady);
 
@@ -174,7 +174,7 @@ namespace android {
 			s = *(s.next);
 		if (s.methodID == methodID) {
 			int i = 0, size = 0;
-			ALOGD("found signature for methodID %08x: %s", methodID, s.sig);
+			ALOGD("found signature for methodID %08x: %s", (int)methodID, s.sig);
 			//read through method params, ignore return type at the end
 			while (s.sig[i] != ')') {
 				switch (s.sig[i]) {
@@ -233,7 +233,7 @@ namespace android {
 	}
 
 	void ExecutionManager::addArray(jarray jarr, int length, int dalvikP) {
-		ALOGD("addArray(jarray=%08x, length=%d, dalvikP=%08x)", jarr, length, dalvikP);
+		ALOGD("addArray(jarray=%08x, length=%d, dalvikP=%08x)", (int)jarr, length, dalvikP);
 		arrayList_t* newArray = (arrayList_t*)malloc(sizeof(arrayList_t));
 		if (arrayList == 0) { //no array added yet
 			*newArray = {jarr, length, dalvikP, 0};
@@ -272,7 +272,7 @@ namespace android {
 		while (s->wrapperP != wrapperP && s->next != 0) s = s->next;
 		if (s->wrapperP == wrapperP) {
 			ALOGD("found entry with dalvikP=%08x, length=%d, wrapperP=%s, next=%08x",
-				(int)s->dalvikP, s->length, s->wrapperP, (int)s->next);
+				(int)s->dalvikP, s->length, (const char*)s->wrapperP, (int)s->next);
 			ALOGD("returning reference %08x", (int)s);
 			return s;
 		} else return NULL;
@@ -303,7 +303,7 @@ namespace android {
 			s->next = temp;
 			return;
 		}
-		ALOGE("deleteCharsEntry: entry %s not found", wrapperP);
+		ALOGE("deleteCharsEntry: entry %s not found", (const char*)wrapperP);
 	}
 
     /*void *mainLoop(void *) {
