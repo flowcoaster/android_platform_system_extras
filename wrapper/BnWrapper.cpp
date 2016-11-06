@@ -94,12 +94,13 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 		IPCThreadState::self()->getCallingUid()))
 		return PERMISSION_DENIED;*/
 	    int argc = data.readInt32();
-	    int* argv = (int*)malloc(argc*sizeof(int)); //freed at the end of TAINTCALL
+	    u4* argv = (u4*)malloc(argc*sizeof(u4)); //freed at the end of TAINTCALL
 	    Vector<int> vectaints;
-	    for (int i=0; i<argc; i++) vectaints.push(data.readInt32());
+	    for (int i=0; i<argc; i++)
+          vectaints.push(data.readInt32());
 	    for (int i=0; i<argc; i++) {
-		argv[i] = data.readInt32();
-		//ALOGD("argv[%d]=%d", i, argv[i]);
+          argv[i] = data.readInt32();
+          //ALOGD("argv[%d]=%d", i, argv[i]);
 	    }
 	    const char* shorty = data.readCString();
 	    //ALOGD("parcel reply=%p", reply);
@@ -112,8 +113,13 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    int argInfo = data.readInt32();
 	    ALOGD("read parcel: clazz=%p, argInfo=%d, argc=%d, shorty=%s, libHandle=%d, funcHandle=%d",
 		clazz, argInfo, argc, shorty, libHandleRef, funcRef);
-	    for (int i=0; i<argc; i++) ALOGD("taint %08x <- args[%d]=%08x", vectaints[i], i, argv[i]);
+        
+	    for (int i=0; i<argc; i++)
+          ALOGD("taint %08x <- args[%d]=%08x", vectaints[i], i, argv[i]);
+        
 	    //for (int i=0; i<argc+2; i++) ALOGD("taint %08x <- args[%d]=%08x", vectaints[i], i, argv[i]);
+
+        // DS: This hack causes problems! It cuts arguments (first one) for some methods
 	    argv++; // hack for the extra value at index 0
 
 	    // TODO: put result on stack otherwise ... ohoh
@@ -193,6 +199,9 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    }
 	    myExecManager->jniCall.length = datasize;
 	    int status = myExecManager->setJniResult(rawdata);
+        if(function == 148) {
+          ALOGD("result for GetArrayLength: %d", (*((int*)rawdata)));
+        }
 	    ALOGD("Status of ExecutionManager after setJniResult is %s", ExecutionManager::strStatus(status));
 	    reply->writeInt32(status);
 	    if (status == ExecutionManager::WAIT4JNI) {

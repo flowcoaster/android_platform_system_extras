@@ -25,7 +25,7 @@ namespace android {
 			pI->argc, 
 			pI->argv, 
 			pI->shorty, 
-			pI->funcHandle, 
+			pI->funcHandle,
 			pI->pResult);
 
       ALOGD("STILL ALIVE AFTER PLATFORM INVOKE");
@@ -43,8 +43,7 @@ namespace android {
         mResult = result;
 
         id++;
-        ALOGD("CREATE THREAD WITH ID %d", id);
-
+        
         pthread_attr_t attr;
         pthread_attr_init(&attr);
         // pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -147,12 +146,17 @@ namespace android {
     }
 
 	void ExecutionManager::addSignatureForMethod(jmethodID methodID, const char* sig) {
-		ALOGD("addSignatureForMethod(methodID=%08x, sig=%s)", methodID, sig);
+      ALOGD("addSignatureForMethod(methodID=%08x, sig=%s)", (int)methodID, sig);
 		sigList_t* newSig = (sigList_t*)malloc(sizeof(sigList_t));
 		if (sigList == 0) { //no method added yet
-			*newSig = {methodID, sig, 0};
+          //*newSig = {methodID, sig, 0};
+          newSig->methodID = methodID;
+          newSig->sig = sig;
+          newSig->next = NULL;
 		} else { // push in front of other methods
-			*newSig = {methodID, sig, sigList};
+          newSig->methodID = methodID;
+          newSig->sig = sig;
+          newSig->next = sigList;
 		}
 		sigList = newSig;
 		ALOGD("addSignatureForMethod: %08x: methodID=%08x, sig=%s, next=%08x",
@@ -236,9 +240,15 @@ namespace android {
 		ALOGD("addArray(jarray=%08x, length=%d, dalvikP=%08x)", (int)jarr, length, dalvikP);
 		arrayList_t* newArray = (arrayList_t*)malloc(sizeof(arrayList_t));
 		if (arrayList == 0) { //no array added yet
-			*newArray = {jarr, length, dalvikP, 0};
+          newArray->jarr = jarr;
+          newArray->length = length;
+          newArray->dalvikP = dalvikP;
+          newArray->next = NULL;
 		} else { // push in front of other arrays
-			*newArray = {jarr, length, dalvikP, arrayList};
+          newArray->jarr = jarr;
+          newArray->length = length;
+          newArray->dalvikP = dalvikP;
+          newArray->next = arrayList;
 		}
 		arrayList = newArray;
 	}
@@ -256,9 +266,15 @@ namespace android {
 		stringMap_t* newCharsEntry = (stringMap_t*)malloc(sizeof(stringMap_t));
 		ALOGD("sizeof(stringMap_t)=%d", sizeof(stringMap_t));
 		if (charsList == 0) { //no method added yet
-			*newCharsEntry = {dalvikP, length, wrapperP, 0};
+          newCharsEntry->dalvikP = dalvikP;
+          newCharsEntry->length = length;
+          newCharsEntry->wrapperP = wrapperP;
+          newCharsEntry->next = NULL;
 		} else { // push in front of other methods
-			*newCharsEntry = {dalvikP, length, wrapperP, charsList};
+          newCharsEntry->dalvikP = dalvikP;
+          newCharsEntry->length = length;
+          newCharsEntry->wrapperP = wrapperP;
+          newCharsEntry->next = charsList;
 		}
 		charsList = newCharsEntry;
 		ALOGD("added string map entry with dalvikP=%08x, length=%d, wrapperP=%s, next=%08x",
