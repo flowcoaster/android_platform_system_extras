@@ -15,7 +15,7 @@ namespace android {
     void* clazz;
     int argInfo;
     int argc;
-    const int* argv;
+    const u4* argv;
     const char* shorty;
     void* funcHandle;
     jvalue* pResult;
