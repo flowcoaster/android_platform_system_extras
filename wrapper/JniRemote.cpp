@@ -30,7 +30,11 @@ static jint DetachCurrentThread(JavaVM* vm) {
 
 static jint GetEnv(JavaVM* vm, void** env, jint version) {
 	ALOGD("GetEnv()");
-	return 0;
+    if (version < JNI_VERSION_1_1 || version > JNI_VERSION_1_6) {
+        return JNI_EVERSION;
+    }
+	if (vm == NULL) return JNI_EDETACHED;
+	return JNI_OK;
 }
 
 static jint DestroyJavaVM(JavaVM* vm) {
@@ -3885,7 +3889,7 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
     UnregisterNatives,
     MonitorEnter,
     MonitorExit,
-    GetJavaVM, //TODO: full implementation
+    GetJavaVM,
     GetStringRegion,
     GetStringUTFRegion,
     GetPrimitiveArrayCritical,
