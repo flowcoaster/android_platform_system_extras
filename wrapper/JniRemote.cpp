@@ -2922,7 +2922,9 @@ static jdoubleArray NewDoubleArray(JNIEnvMod* env, jsize length) {
 	ALOGD("GetPrimitiveArrayElements received size=%d, dalvikP=%08x", size, dalvikP);\
 	em->addArray(jarr, size, dalvikP);\
 	void* result = malloc(size);\
-	memcpy(result, &idata[2], size);
+	memcpy(result, &idata[2], size);\
+    ALOGD("Size of array: %d\n", size); \
+    for(int i = 0; i < size; i++) ALOGD("\t%d: 0x%02x <=> 0x%02x\n", i, ((char*)result)[i], ((char*)(&idata[2]))[i]);
 
 //code 151
 static jboolean* GetBooleanArrayElements(JNIEnvMod* env, jbooleanArray jarr, jboolean* isCopy) {
