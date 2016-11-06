@@ -9,14 +9,13 @@
 #include "utils.h"
 #include "JniEnvMod.h"
 
-extern "C" void dvmPlatformInvoke(android::JNIEnvModExt* pEnv, void* clazz, int argInfo,
-    int argc, const int* argv, const char* signature, void* func, android::jvalue* pResult);
+extern "C" void dvmPlatformInvoke(android::JNIEnvModExt* pEnv, void* clazz, int argInfo, int argc, const uint32_t* argv, const char* signature, void* func, android::jvalue* pResult);
 
 namespace android {
 
 typedef struct _JValTaint {
 	jvalue val;
-	int32_t taint;
+	u4 taint;
 } JValTaint;
 
 class IWrapper : public IInterface {
