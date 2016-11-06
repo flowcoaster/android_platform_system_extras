@@ -14,27 +14,30 @@
 namespace android{
 
 	int BpWrapper::doCallbackTransaction(int function, int length, void* rawdata,
-		int taintlength, JValTaint* res, Parcel* reply) {
-		ALOGD("callback function=%d, length=%d, data=%08x, taintlength=%d",
-			function, length, (int)rawdata, taintlength);
-	    Parcel data;
-	    data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
-	    data.writeInt32(function);
-	    data.writeInt32(length);
-		data.writeInt32(taintlength);
-        if(length > 0) {
-          data.write(rawdata, length);
-          if (taintlength > 0)
-            data.write(rawdata+length, taintlength);
-        }
-	    remote()->transact(CALLBACK, data, reply);
-        if(length > 0) {
-          ALOGD("now freeing rawdata @%08x", (int)rawdata);
-          free (rawdata);
-        } else {
-          ALOGD("no rawdata - nothing to be freed");
-        }
-	    return reply->readInt32();
+                                         int taintlength, JValTaint* res, Parcel* reply) {
+      ALOGD("callback function=%d, length=%d, data=%08x, taintlength=%d",
+            function, length, (int)rawdata, taintlength);
+      ALOGD("Data to transact: ");
+      for(int i = 0; i < length; i++)
+        ALOGD("\t%d: %02x", i, ((char*)rawdata)[i]);
+      Parcel data;
+      data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
+      data.writeInt32(function);
+      data.writeInt32(length);
+      data.writeInt32(taintlength);
+      if(length > 0) {
+        data.write(rawdata, length);
+        if (taintlength > 0)
+          data.write(rawdata + length, taintlength);
+      }
+      remote()->transact(CALLBACK, data, reply);
+      if(length > 0) {
+        ALOGD("now freeing rawdata @%08x", (int)rawdata);
+        free (rawdata);
+      } else {
+        ALOGD("no rawdata - nothing to be freed");
+      }
+      return reply->readInt32();
 	}
 
 	void setResult(JValTaint* res, Parcel* reply) {
@@ -1339,15 +1342,24 @@ namespace android{
 	}
 
 #define GENERIC_GETARRAYELEMENTS() \
-		taintsize = size + sizeof(size) + sizeof(result); \
-		callbackdata = malloc(2*(size + sizeof(size) + sizeof(result))); \
-		int* idata = (int*)callbackdata; \
-		idata[0] = size; \
-		idata[1] = (int) result; \
-		memcpy(&idata[2], result, size); \
-		memset(&idata[2+size/4], 0, 8); \
-		for (int j=0; j<=size/4; j++) idata[4+size/4+j] = taint; \
-
+  taintsize = size + sizeof(size) + sizeof(result);                     \
+  callbackdata = malloc(2*(size + sizeof(size) + sizeof(result)));      \
+  int* idata = (int*)callbackdata;                                      \
+  idata[0] = size;                                                      \
+  idata[1] = (int) result;                                              \
+  ALOGD("Copy following %d bytes to offset %p", size, &idata[2]);       \
+  for(int i = 0; i < size; i++)                                         \
+    ALOGD("\t1 %d: %02x", i, ((char*)result)[i]);                         \
+  memcpy(&idata[2], result, size);                                      \
+  ALOGD("Set 8 bytes to 0 at offset %p", &idata[2+size/4]);             \
+  memset(&idata[2+size/4], 0, 8);                                       \
+  for(int i = 0; i < size; i++)                                         \
+    ALOGD("\t2 %d: %02x", i, ((char*)(&idata[2]))[i]);                    \
+  for (int j=0; j<=size/4; j++) idata[4+size/4+j] = taint;              \
+  for(int i = 0; i < size; i++)                                         \
+    ALOGD("\t3 %d: %02x", i, ((char*)(&idata[2]))[i]);                  \
+  size += 2 * sizeof(int);
+  
 	void BpWrapper::callGetBooleanArrayElements() {
 		jbooleanArray jarr = *((jbooleanArray*)replydata);
 		jboolean fake = 0;
@@ -1427,21 +1439,21 @@ namespace android{
 
 	void BpWrapper::callReleaseBooleanArrayElements() {
 		jbooleanArray jarr = *((jbooleanArray*)replydata);
-		jniEnv->ReleaseBooleanArrayElements(jarr, 0, 0);
+		jniEnv->ReleaseBooleanArrayElements(jarr, (jboolean*)replydata, 0);
 		size = taintsize = 0;
 		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseByteArrayElements() {
 		jbyteArray jarr = *((jbyteArray*)replydata);
-		jniEnv->ReleaseByteArrayElements(jarr, 0, 0);
+		jniEnv->ReleaseByteArrayElements(jarr, (jbyte*)replydata, 0);
 		size = taintsize = 0;
 		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseCharArrayElements() {
 		jcharArray jarr = *((jcharArray*)replydata);
-		jniEnv->ReleaseCharArrayElements(jarr, 0, 0);
+		jniEnv->ReleaseCharArrayElements(jarr, (jchar*)replydata, 0);
 		size = taintsize = 0;
 		callbackdata = NULL; // malloc(size);
 	}
@@ -1463,21 +1475,22 @@ namespace android{
 
 	void BpWrapper::callReleaseLongArrayElements() {
 		jlongArray jarr = *((jlongArray*)replydata);
-		jniEnv->ReleaseLongArrayElements(jarr, 0, 0);
+        ALOGD("ReleaseLongArrayElements(%08x)", (int)jarr);
+		jniEnv->ReleaseLongArrayElements(jarr, (jlong*)replydata, 0);
 		size = taintsize = 0;
 		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseFloatArrayElements() {
 		jfloatArray jarr = *((jfloatArray*)replydata);
-		jniEnv->ReleaseFloatArrayElements(jarr, 0, 0);
+		jniEnv->ReleaseFloatArrayElements(jarr, (jfloat*)replydata, 0);
 		size = taintsize = 0;
 		callbackdata = NULL; // malloc(size);
 	}
 
 	void BpWrapper::callReleaseDoubleArrayElements() {
 		jdoubleArray jarr = *((jdoubleArray*)replydata);
-		jniEnv->ReleaseDoubleArrayElements(jarr, 0, 0);
+		jniEnv->ReleaseDoubleArrayElements(jarr, (jdouble*)replydata, 0);
 		size = taintsize = 0;
 		callbackdata = NULL; // malloc(size);
 	}
@@ -1792,6 +1805,7 @@ namespace android{
 	void BpWrapper::callGetArrayLength() {
 		jarray jarr = *(jarray*)replydata;
 		jsize result = jniEnv->GetArrayLength(jarr);
+        ALOGD("callGetArrayLenth: %d", (int)result);
 		taintsize = 0;
 		size = sizeof(result);
 		callbackdata = malloc(size);
@@ -2118,25 +2132,25 @@ namespace android{
 
 	JValTaint* BpWrapper::taintCall(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
     	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) {
-	    ALOGD("BpWrapper::taintcall(clazz=%08x, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s)", clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName);
-	    setJniEnv(pEnv);
-	    Parcel data, reply;
-	    Parcel* replyPtr = &reply;
-	    //ALOGD("Parcel &data=%p, replyPtr=%p", &data, replyPtr);
-	    //if (replyPtr != 0) ALOGD("replyPtr stats: dataSize=%d, availableData=%d", replyPtr->dataSize(), replyPtr->dataAvail());
+    	    ALOGD("BpWrapper::taintcall(clazz=%08x, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s)", clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName);
+    	    setJniEnv(pEnv);
+    	    Parcel data, reply;
+            Parcel* replyPtr = &reply;
+            //ALOGD("Parcel &data=%p, replyPtr=%p", &data, replyPtr);
+            //if (replyPtr != 0) ALOGD("replyPtr stats: dataSize=%d, availableData=%d", replyPtr->dataSize(), replyPtr->dataAvail());
             data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
-	    data.writeInt32(argc);
-	    //data.write(taints, argc);
-	    for (int i=0; i<argc; i++) data.writeInt32(taints[i]);
-	    for (int i=0; i<argc; i++) data.writeInt32(argv[i]); //data.write(argv, argc);
-	    //if (libHandle != 0) data.write(libHandle, 4); else data.writeInt32(0);
-	    data.writeCString(shorty);
-	    data.writeInt32(libHandle);
-	    //if (funcHandle != 0) data.write(funcHandle, 4); else data.writeInt32(0);
-	    data.writeInt32(funcHandle);
-	    if (clazz != 0) data.write(&clazz, 4); else data.writeInt32(0);
-	    data.writeInt32(argInfo);
-	    //ALOGD("about to transact");
+            data.writeInt32(argc);
+            //data.write(taints, argc);
+            for (int i=0; i<argc; i++) data.writeInt32(taints[i]);
+            for (int i=0; i<argc; i++) data.writeInt32(argv[i]); //data.write(argv, argc);
+            //if (libHandle != 0) data.write(libHandle, 4); else data.writeInt32(0);
+            data.writeCString(shorty);
+            data.writeInt32(libHandle);
+            //if (funcHandle != 0) data.write(funcHandle, 4); else data.writeInt32(0);
+            data.writeInt32(funcHandle);
+            if (clazz != 0) data.write(&clazz, 4); else data.writeInt32(0);
+            data.writeInt32(argInfo);
+            //ALOGD("about to transact");
             remote()->transact(TAINT_CALL, data, replyPtr);    // asynchronous call
 	    int execStatus;
 	    reply.readInt32(&execStatus);
