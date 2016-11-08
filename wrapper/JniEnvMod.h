@@ -1468,6 +1468,13 @@ struct _JavaVM {
 #define JNI_ERR         (-1)        /* generic error */
 #define JNI_FALSE   0
 #define JNI_TRUE    1
+#define JNI_VERSION_1_1 0x00010001
+#define JNI_VERSION_1_2 0x00010002
+#define JNI_VERSION_1_4 0x00010004
+#define JNI_VERSION_1_6 0x00010006
+#define JNI_ERR         (-1)        /* generic error */
+#define JNI_EDETACHED   (-2)        /* thread detached from the VM */
+#define JNI_EVERSION    (-3)        /* JNI version error */
 
 JNIEnvModExt* dvmCreateJNIEnvMod();
 JavaVM* wrCreateJavaVM(JNIEnvModExt* env);

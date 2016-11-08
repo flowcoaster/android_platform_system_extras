@@ -2148,7 +2148,7 @@ namespace android{
             data.writeInt32(libHandle);
             //if (funcHandle != 0) data.write(funcHandle, 4); else data.writeInt32(0);
             data.writeInt32(funcHandle);
-            if (clazz != 0) data.write(&clazz, 4); else data.writeInt32(0);
+            if (clazz != 0) data.writeInt32((int)clazz); else data.writeInt32(0);
             data.writeInt32(argInfo);
             //ALOGD("about to transact");
             remote()->transact(TAINT_CALL, data, replyPtr);    // asynchronous call

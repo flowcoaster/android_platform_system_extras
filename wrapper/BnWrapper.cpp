@@ -108,11 +108,12 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    void* libHandle = libtable[libHandleRef];
 	    int32_t funcRef = data.readInt32();
 	    void* funcHandle = libtable[funcRef];
-	    int clazzi = data.readInt32();
-	    void* clazz = &clazzi;
+	    /*int clazzi = data.readInt32();
+	    void* clazz = &clazzi;*/
+		int clazz = data.readInt32();
 	    int argInfo = data.readInt32();
-	    ALOGD("read parcel: clazz=%p, argInfo=%d, argc=%d, shorty=%s, libHandle=%d, funcHandle=%d",
-		clazz, argInfo, argc, shorty, libHandleRef, funcRef);
+	    ALOGD("read parcel: clazz=%08x, argInfo=%d, argc=%d, shorty=%s, libHandle=%d, funcHandle=%d",
+		(int)clazz, argInfo, argc, shorty, libHandleRef, funcRef);
         
 	    for (int i=0; i<argc; i++)
           ALOGD("taint %08x <- args[%d]=%08x", vectaints[i], i, argv[i]);
@@ -120,7 +121,9 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    //for (int i=0; i<argc+2; i++) ALOGD("taint %08x <- args[%d]=%08x", vectaints[i], i, argv[i]);
 
         // DS: This hack causes problems! It cuts arguments (first one) for some methods
-	    argv++; // hack for the extra value at index 0
+		if (clazz == 0) { // means non-static method
+	    	argv++; // hack for the extra value at index 0
+		}
 
 	    // TODO: put result on stack otherwise ... ohoh
 	    jvalue result;
@@ -132,7 +135,7 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    //myExecManager->clazz=clazz;
 	    myExecManager->platformInvoke.jniEnv=myExt;
 	    myExecManager->platformInvoke.argInfo=argInfo;
-	    myExecManager->platformInvoke.clazz=clazz;
+	    myExecManager->platformInvoke.clazz=(void*)clazz;
 	    myExecManager->platformInvoke.argc=argc;
 	    myExecManager->platformInvoke.argv=argv;
 	    myExecManager->platformInvoke.shorty=shorty;
