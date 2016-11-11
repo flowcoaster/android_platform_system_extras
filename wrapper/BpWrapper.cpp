@@ -2142,7 +2142,11 @@ namespace android{
             data.writeInt32(argc);
             //data.write(taints, argc);
             for (int i=0; i<argc; i++) data.writeInt32(taints[i]);
-            for (int i=0; i<argc; i++) data.writeInt32(argv[i]); //data.write(argv, argc);
+            ALOGD("Passing the following args: ");
+            for (int i=0; i<argc; i++) {
+              ALOGD("\targv[%d] = 0x%08x\n", i, argv[i]);
+              data.writeInt32(argv[i]);
+            } //data.write(argv, argc);
             //if (libHandle != 0) data.write(libHandle, 4); else data.writeInt32(0);
             data.writeCString(shorty);
             data.writeInt32(libHandle);

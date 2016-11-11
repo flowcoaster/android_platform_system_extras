@@ -116,14 +116,15 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 		(int)clazz, argInfo, argc, shorty, libHandleRef, funcRef);
         
 	    for (int i=0; i<argc; i++)
-          ALOGD("taint %08x <- args[%d]=%08x", vectaints[i], i, argv[i]);
+          ALOGD("taint 0x%08x <- args[%d]=0x%08x", vectaints[i], i, argv[i]);
         
 	    //for (int i=0; i<argc+2; i++) ALOGD("taint %08x <- args[%d]=%08x", vectaints[i], i, argv[i]);
 
         // DS: This hack causes problems! It cuts arguments (first one) for some methods
-		if (clazz == 0) { // means non-static method
+		/* if (clazz == 0) { // means non-static method
+          ALOGD("THIS IS A NON-STATIC CLASS");
 	    	argv++; // hack for the extra value at index 0
-		}
+            }*/
 
 	    // TODO: put result on stack otherwise ... ohoh
 	    jvalue result;
@@ -142,8 +143,8 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    myExecManager->platformInvoke.funcHandle=funcHandle;
 	    myExecManager->platformInvoke.pResult=pResult;
 
-	    ALOGD("check: argv[0]: %d (%08x)", myExecManager->platformInvoke.argv[0], (int)(&myExecManager->platformInvoke.argv[0]));
-	    ALOGD("check: argv[1]: %d (%08x)", myExecManager->platformInvoke.argv[1], (int)(&myExecManager->platformInvoke.argv[1]));
+	    ALOGD("check: argv[0]: 0x%08x (ptr: 0x%08x)", myExecManager->platformInvoke.argv[0], (int)(&myExecManager->platformInvoke.argv[0]));
+	    ALOGD("check: argv[1]: 0x%08x (ptr: 0x%08x)", myExecManager->platformInvoke.argv[1], (int)(&myExecManager->platformInvoke.argv[1]));
 
 	    ALOGD("now calling myExecManager::startExec(%p)",pResult);
 //#ifdef WITH_DALVIK_BINDER_SERVICE

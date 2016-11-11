@@ -20,7 +20,7 @@ namespace android {
       //ALOGD("argv[1]: %d", pI->argv[1]);
 
       dvmPlatformInvoke(pI->jniEnv, 
-			pI->clazz, 
+            pI->clazz, 
 			pI->argInfo, 
 			pI->argc, 
 			pI->argv, 
@@ -38,6 +38,7 @@ namespace android {
     int ExecutionManager::startExec(jvalue* result) {
         // sem_wait(&mExecReady);
 
+      ALOGD("State: WAIT4EXEC");
         mStatus = WAIT4EXEC;
 
         mResult = result;
@@ -86,6 +87,7 @@ namespace android {
     }
 
     void ExecutionManager::signalResult() {
+      ALOGD("State: FINISHED");
         mStatus = FINISHED;
         sem_post(&mReplyReady);
     }
@@ -95,6 +97,7 @@ namespace android {
     }
 
     int ExecutionManager::reqJniCall() {
+        ALOGD("State: WAIT4JNI");
         mStatus = WAIT4JNI;
 
         //ALOGD("ExecutionManager makes startExec to continue");
@@ -112,6 +115,7 @@ namespace android {
 
         ALOGD("ExecutionManager continues to execute after JNI Call");
 
+        ALOGD("State: WAIT4EXEC");
         mStatus = WAIT4EXEC;
 
         return mStatus;

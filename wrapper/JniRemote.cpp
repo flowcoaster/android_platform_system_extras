@@ -2643,7 +2643,7 @@ static const jchar* GetStringChars(JNIEnvMod* env, jstring jstr, jboolean* isCop
 
 //code 56
 void ReleaseStringChars(JNIEnvMod* env, jstring jstr, const jchar* chars) {
-	ALOGD("jniEnvMod->ReleaseStringChars(env=%08x, jstr=%08x, jchars=%08x)",
+	ALOGD("jniEnvMod->ReleaseStringChars(env=0x%08x, jstr=0x%08x, jchars=0x%08x)",
 		(int)env, (int)jstr, (int)chars);
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
 	stringMap_t* s = em->getDalvikChars(chars);
@@ -2654,8 +2654,8 @@ void ReleaseStringChars(JNIEnvMod* env, jstring jstr, const jchar* chars) {
 		ALOGE("Negative string length: %d", s->length);
 		return;
 	}
-	//ALOGD("found string map entry at %08x", (int)s);
-	//ALOGD("with length=%d, dalvikP=%08x, chars=%s", s->length, (int)(s->dalvikP), s->wrapperP);
+	ALOGD("found string map entry at %08x", (int)s);
+	ALOGD("with length=%d, dalvikP=%08x, chars=%s", s->length, (int)(s->dalvikP), s->wrapperP);
 	int size = 3*sizeof(int) + sizeof(jchar)*s->length;
 	int* data = (int*)malloc(size);
 	//ALOGD("allocated memory of size %d to %08x", size, (int*)data);
@@ -2670,6 +2670,7 @@ void ReleaseStringChars(JNIEnvMod* env, jstring jstr, const jchar* chars) {
     em->reqJniCall();
 	ALOGD("ReleaseStringChars: Now deleting entry in table (chars=%08x)", (int)chars);
 	em->deleteCharsEntry(chars);
+    ALOGD("ReleaseStringChars: Success!");
 }
 
 //code 2
