@@ -72,6 +72,9 @@ namespace android {
 
         int mStatus;
 
+        int funcHandle;
+        jvalue* result;
+        
         int id;
 
         // details for the actual native execution
@@ -107,6 +110,7 @@ namespace android {
         ~ExecutionManager() {
             sem_destroy(&mReplyReady);
             sem_destroy(&mJniReady);
+            sem_destroy(&mExecReady);
         }
 
 

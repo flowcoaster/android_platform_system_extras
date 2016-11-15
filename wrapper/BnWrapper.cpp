@@ -27,7 +27,7 @@ bool BnWrapper::checkAuthorization(int pid, int uid) {
 }
 
 status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags) {
-    //ALOGD("BnWrapper::onTransact(code=%i, &data=%p, reply=%p, flags=%i)", code, &data, reply, flags);
+    ALOGD("BnWrapper::onTransact(code=%i, &data=%p, reply=%p, flags=%i)", code, &data, reply, flags);
     data.checkInterface(this);
 
     switch(code) {

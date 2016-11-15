@@ -1,24 +1,48 @@
 #include <utils/Log.h>
+#include <stdlib.h>
+#include <pthread.h>
 // #include <stdio.h>
 // #include <unistd.h>
 #include "ExecutionManager.h"
 #include "IWrapper.h"
 
+#include <utils/CallStack.h>
+
 #ifndef FLOWCOASTER_DEBUG
 	#define ALOGD(...) void();
 #endif
 
-namespace android {
+extern "C"
+void jniAbort()
+{
+  ALOGD("dvmPlatformInvoke crashed!!!");
+  android::CallStack* cs = new android::CallStack();
+  cs->update(0, 100);
+  cs->dump("dvmPlatformInvoke");
+}
 
-    #define LOG_TAG "ExecutionManager"
+namespace android {
+#define LOG_TAG "ExecutionManager"
+ 
+  void endOfThread(void *param) {
+    ALOGD("*********** THREAD HAS STOPPPED ***********");
+
+    CallStack* cs = new CallStack();
+    cs->update(0, 100);
+    cs->dump("ExecutionManager terminated: ");
+   
+    // exit(1);
+  }
 
     static void *runNative(void *platformInvoke) {
       platformInvoke_t* pI = (platformInvoke_t *) platformInvoke;
       ALOGD("call to dvmPlatformInvoke(env=%08x, clazz=%08x, argInfo=%08x, argc=%08x, argv=%08x, shorty=%s, funcHandle=%08x, pResult=%08x",
 			(int)pI->jniEnv, (int)pI->clazz, pI->argInfo, pI->argc, (int)pI->argv, pI->shorty, (int)pI->funcHandle, (int)pI->pResult);
-      //ALOGD("argv[0]: %d", pI->argv[0]);
-      //ALOGD("argv[1]: %d", pI->argv[1]);
+      
+      pthread_cleanup_push(&endOfThread, (void*) 1);
 
+      ALOGD("Execute now ... ");
+      
       dvmPlatformInvoke(pI->jniEnv, 
             pI->clazz, 
 			pI->argInfo, 
@@ -27,6 +51,8 @@ namespace android {
 			pI->shorty, 
 			pI->funcHandle,
 			pI->pResult);
+
+      pthread_cleanup_pop(1);
 
       ALOGD("STILL ALIVE AFTER PLATFORM INVOKE");
 
@@ -37,8 +63,8 @@ namespace android {
 
     int ExecutionManager::startExec(jvalue* result) {
         // sem_wait(&mExecReady);
-
-      ALOGD("State: WAIT4EXEC");
+      
+      ALOGD("State: WAIT4EXEC (%d, %p, %p)", funcHandle, result, this);
         mStatus = WAIT4EXEC;
 
         mResult = result;
@@ -87,7 +113,7 @@ namespace android {
     }
 
     void ExecutionManager::signalResult() {
-      ALOGD("State: FINISHED");
+      ALOGD("State: FINISHED (%d, %p, %p)", funcHandle, result, this);
         mStatus = FINISHED;
         sem_post(&mReplyReady);
     }
@@ -97,7 +123,7 @@ namespace android {
     }
 
     int ExecutionManager::reqJniCall() {
-        ALOGD("State: WAIT4JNI");
+      ALOGD("State: WAIT4JNI (%d, %p, %p)", funcHandle, result, this);
         mStatus = WAIT4JNI;
 
         //ALOGD("ExecutionManager makes startExec to continue");
@@ -115,7 +141,7 @@ namespace android {
 
         ALOGD("ExecutionManager continues to execute after JNI Call");
 
-        ALOGD("State: WAIT4EXEC");
+        ALOGD("State: WAIT4EXEC (%d, %p, %p)", funcHandle, result, this);
         mStatus = WAIT4EXEC;
 
         return mStatus;

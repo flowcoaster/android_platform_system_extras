@@ -17,9 +17,9 @@ namespace android{
                                          int taintlength, JValTaint* res, Parcel* reply) {
       ALOGD("callback function=%d, length=%d, data=%08x, taintlength=%d",
             function, length, (int)rawdata, taintlength);
-      ALOGD("Data to transact: ");
+      /* ALOGD("Data to transact: ");
       for(int i = 0; i < length; i++)
-        ALOGD("\t%d: %02x", i, ((char*)rawdata)[i]);
+      ALOGD("\t%d: %02x", i, ((char*)rawdata)[i]);*/
       Parcel data;
       data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
       data.writeInt32(function);
@@ -1347,17 +1347,17 @@ namespace android{
   int* idata = (int*)callbackdata;                                      \
   idata[0] = size;                                                      \
   idata[1] = (int) result;                                              \
-  ALOGD("Copy following %d bytes to offset %p", size, &idata[2]);       \
-  for(int i = 0; i < size; i++)                                         \
-    ALOGD("\t1 %d: %02x", i, ((char*)result)[i]);                         \
+  //ALOGD("Copy following %d bytes to offset %p", size, &idata[2]);     \
+  // for(int i = 0; i < size; i++)                                      \
+  //   ALOGD("\t1 %d: %02x", i, ((char*)result)[i]);                    \
   memcpy(&idata[2], result, size);                                      \
-  ALOGD("Set 8 bytes to 0 at offset %p", &idata[2+size/4]);             \
+  // ALOGD("Set 8 bytes to 0 at offset %p", &idata[2+size/4]);           \
   memset(&idata[2+size/4], 0, 8);                                       \
-  for(int i = 0; i < size; i++)                                         \
-    ALOGD("\t2 %d: %02x", i, ((char*)(&idata[2]))[i]);                    \
+  // for(int i = 0; i < size; i++)                                       \
+  //  ALOGD("\t2 %d: %02x", i, ((char*)(&idata[2]))[i]);                \
   for (int j=0; j<=size/4; j++) idata[4+size/4+j] = taint;              \
-  for(int i = 0; i < size; i++)                                         \
-    ALOGD("\t3 %d: %02x", i, ((char*)(&idata[2]))[i]);                  \
+  // for(int i = 0; i < size; i++)                                       \
+  // ALOGD("\t3 %d: %02x", i, ((char*)(&idata[2]))[i]);                  \
   size += 2 * sizeof(int);
   
 	void BpWrapper::callGetBooleanArrayElements() {
@@ -2154,11 +2154,12 @@ namespace android{
             data.writeInt32(funcHandle);
             if (clazz != 0) data.writeInt32((int)clazz); else data.writeInt32(0);
             data.writeInt32(argInfo);
-            //ALOGD("about to transact");
+            ALOGD("about to transact");
             remote()->transact(TAINT_CALL, data, replyPtr);    // asynchronous call
+            ALOGD("transaction done");
 	    int execStatus;
 	    reply.readInt32(&execStatus);
-	    //ALOGD("execStatus=%d", execStatus);
+	    ALOGD("execStatus=%d", execStatus);
 	    bool usedJni = false;
 	    JValTaint resVal;
 	    JValTaint* res = &resVal;
