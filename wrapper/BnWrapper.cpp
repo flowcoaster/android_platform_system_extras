@@ -112,8 +112,10 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    void* clazz = &clazzi;*/
 		int clazz = data.readInt32();
 	    int argInfo = data.readInt32();
+		pthread_t pt = data.readInt64();
 	    ALOGD("read parcel: clazz=%08x, argInfo=%d, argc=%d, shorty=%s, libHandle=%d, funcHandle=%d",
 		(int)clazz, argInfo, argc, shorty, libHandleRef, funcRef);
+		ALOGD("read thread ID %lld", pt);
         
 	    for (int i=0; i<argc; i++)
           ALOGD("taint 0x%08x <- args[%d]=0x%08x", vectaints[i], i, argv[i]);

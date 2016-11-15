@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "JniEnvMod.h"
 #include <utils/CallStack.h>
+#include <pthread.h>
 
 #define LOG_TAG "BpWrapper=Client"
 
@@ -2136,6 +2137,8 @@ namespace android{
     	    setJniEnv(pEnv);
     	    Parcel data, reply;
             Parcel* replyPtr = &reply;
+			pthread_t pt = pthread_self();
+			ALOGD("Thread id: %lld", pt);
             //ALOGD("Parcel &data=%p, replyPtr=%p", &data, replyPtr);
             //if (replyPtr != 0) ALOGD("replyPtr stats: dataSize=%d, availableData=%d", replyPtr->dataSize(), replyPtr->dataAvail());
             data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
@@ -2154,6 +2157,7 @@ namespace android{
             data.writeInt32(funcHandle);
             if (clazz != 0) data.writeInt32((int)clazz); else data.writeInt32(0);
             data.writeInt32(argInfo);
+			data.writeInt64(pt);
             //ALOGD("about to transact");
             remote()->transact(TAINT_CALL, data, replyPtr);    // asynchronous call
 	    int execStatus;
