@@ -4,7 +4,7 @@
 #include <utils/Log.h>
 #include <map>
 
-#include "ExecutionManager.h"
+#include "JniEnvMod.h"
 
 namespace android {
  
@@ -13,12 +13,12 @@ namespace android {
     ThreadManager();
     ~ThreadManager();
     
-    ExecutionManager* getExecutionManager(long threadId);
-    ExecutionManager* addExecutionManager(long threadId);
-    void delExecutionManager(long threadId);
-    
+    JNIEnvModExt* getJniEnv(long threadId);
+    JNIEnvModExt* addJniEnv(long threadId);
+    void delJniEnv(long threadId);
+
   private:
-    std::map <long, ExecutionManager*> managers;
+    std::map <long, JNIEnvModExt*> jniEnvs;
   };
 }
 

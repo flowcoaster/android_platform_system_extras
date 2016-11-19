@@ -64,7 +64,8 @@ namespace android {
     int ExecutionManager::startExec(jvalue* result) {
         // sem_wait(&mExecReady);
       
-      ALOGD("State: WAIT4EXEC (%d, %p, %p)", funcHandle, result, this);
+        ALOGD("State: WAIT4EXEC (%d, %p, %p)", funcHandle, result, this);
+        
         mStatus = WAIT4EXEC;
 
         mResult = result;
@@ -266,6 +267,7 @@ namespace android {
 		} else return -1;
 	}
 
+  // TODO: Use better data structures for better performance!
 	void ExecutionManager::addArray(jarray jarr, int length, int dalvikP) {
 		ALOGD("addArray(jarray=%08x, length=%d, dalvikP=%08x)", (int)jarr, length, dalvikP);
 		arrayList_t* newArray = (arrayList_t*)malloc(sizeof(arrayList_t));

@@ -2,7 +2,7 @@
 #include <binder/IInterface.h>
 #include <binder/Parcel.h>
 #include <BpWrapper.h>
-#include "ExecutionManager.h"
+#include "ThreadManager.h"
 
 namespace android {
 
@@ -14,9 +14,10 @@ class BnWrapper : public BnInterface<IWrapper> {
 
     protected:
 	int callerPid, callerUid;
+    ThreadManager *threadManager;
 //#ifdef WITH_DALVIK_BINDER_SERVICE
-	JNIEnvModExt* jniEnv;
-	JavaVM* vm;
+	// JNIEnvModExt* jniEnv;
+	// JavaVM* vm;
 //#endif
 
     private:

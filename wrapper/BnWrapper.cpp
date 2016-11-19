@@ -1,6 +1,8 @@
 #include <dlfcn.h> // for loading libraries
 #include <binder/IPCThreadState.h>
 #include <BnWrapper.h>
+#include "ThreadManager.h"
+#include "ExecutionManager.h"
 
 #define LOG_TAG "BnWrapper=Server"
 
@@ -14,8 +16,9 @@ BnWrapper::BnWrapper(int pid, int uid) {
     ALOGD("BnWrapper::BnWrapper setting pid=%d, uid=%d", pid, uid);
     callerPid = pid;
     callerUid = uid;
-    jniEnv = dvmCreateJNIEnvMod();
-	vm = wrCreateJavaVM(jniEnv);
+    threadManager = new ThreadManager();
+    /* jniEnv = dvmCreateJNIEnvMod();
+       vm = wrCreateJavaVM(jniEnv);*/
 }
 
 bool BnWrapper::checkAuthorization(int pid, int uid) {
@@ -112,10 +115,10 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    void* clazz = &clazzi;*/
 		int clazz = data.readInt32();
 	    int argInfo = data.readInt32();
-		pthread_t pt = data.readInt64();
+		u4 threadId = data.readInt32();
 	    ALOGD("read parcel: clazz=%08x, argInfo=%d, argc=%d, shorty=%s, libHandle=%d, funcHandle=%d",
-		(int)clazz, argInfo, argc, shorty, libHandleRef, funcRef);
-		ALOGD("read thread ID %lld", pt);
+              (int)clazz, argInfo, argc, shorty, libHandleRef, funcRef);
+		ALOGD("read thread ID %d", threadId);
         
 	    for (int i=0; i<argc; i++)
           ALOGD("taint 0x%08x <- args[%d]=0x%08x", vectaints[i], i, argv[i]);
@@ -133,7 +136,8 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    jvalue* pResult = &result;
 	    /*Parcel* reply2 = reply;
 	    ALOGD("parcel reply=%p, reply2=%p", reply, reply2);*/
-	    JNIEnvModExt* myExt = (JNIEnvModExt*)jniEnv;
+	    // JNIEnvModExt* myExt = (JNIEnvModExt*)jniEnv;
+        JNIEnvModExt* myExt = threadManager->getJniEnv(threadId);
 	    ExecutionManager* myExecManager = myExt->execManager;
 	    //myExecManager->clazz=clazz;
 	    myExecManager->platformInvoke.jniEnv=myExt;
@@ -185,8 +189,9 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    return NO_ERROR;
 	}
 	case CALLBACK: {
-	    //ALOGD("callback on JNI request");
+	    ALOGD("callback on JNI request");
 	    int function, datasize, taintsize;
+        u4 threadId = (u4)data.readInt32();
 	    data.readInt32(&function);
 	    data.readInt32(&datasize);
 	    data.readInt32(&taintsize);
@@ -194,7 +199,7 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    ALOGD("callback on JNI request: read function=%d, datasize=%d, taintsize=%d @%08x",
 			function, datasize, taintsize, (int)rawdata);
 	    data.read(rawdata, datasize);
-	    ExecutionManager* myExecManager = ((JNIEnvModExt*)jniEnv)->execManager;
+	    ExecutionManager* myExecManager = threadManager->getJniEnv(threadId)->execManager;
 	    if (function == myExecManager->jniCall.function) {
 			myExecManager->jniCall.length = datasize;
 			myExecManager->jniCall.param_data = rawdata;
@@ -205,9 +210,6 @@ status_t BnWrapper::onTransact(uint32_t code, const Parcel& data, Parcel* reply,
 	    }
 	    myExecManager->jniCall.length = datasize;
 	    int status = myExecManager->setJniResult(rawdata);
-        if(function == 148) {
-          ALOGD("result for GetArrayLength: %d", (*((int*)rawdata)));
-        }
 	    ALOGD("Status of ExecutionManager after setJniResult is %s", ExecutionManager::strStatus(status));
 	    reply->writeInt32(status);
 	    if (status == ExecutionManager::WAIT4JNI) {

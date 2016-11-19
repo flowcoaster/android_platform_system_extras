@@ -5,7 +5,6 @@
 
 #include <stdarg.h>	// for va_list etc.
 #include <stdint.h> // for int types
-//#include "ExecutionManager.h"
 #include "utils.h"
 
 namespace android {
@@ -1476,7 +1475,7 @@ struct _JavaVM {
 #define JNI_EDETACHED   (-2)        /* thread detached from the VM */
 #define JNI_EVERSION    (-3)        /* JNI version error */
 
-JNIEnvModExt* dvmCreateJNIEnvMod();
+JNIEnvModExt* dvmCreateJNIEnvMod(ExecutionManager *manager);
 JavaVM* wrCreateJavaVM(JNIEnvModExt* env);
 
 struct Callback {
