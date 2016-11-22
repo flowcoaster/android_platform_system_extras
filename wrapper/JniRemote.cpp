@@ -14,7 +14,7 @@
 namespace android {
 
 static jint AttachCurrentThread(JavaVM* vm, JNIEnvMod** p_env, void* thr_args) {
-    ALOGD("AttachCurrentThread()");
+    ALOGD("AttachCurrentThread(vm=%08x, env=%08x, thr_args=%08x)", (int)vm, (int)*p_env, (int)thr_args);
 	return 0;
 }
 
