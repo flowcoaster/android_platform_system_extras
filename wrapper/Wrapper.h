@@ -24,7 +24,7 @@ class Wrapper : public BnWrapper {
     }
 
     virtual JValTaint* taintCall(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
-    	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) {
+                                 const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName, u4 threadId) {
         INFO("Wrapper::taintCall()");
 	return 0;
 	}

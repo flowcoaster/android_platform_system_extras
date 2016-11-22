@@ -38,7 +38,7 @@ namespace android {
 	int32_t funcHandle = funcRef;
 	const char* funcName = "foo";
 
-	JValTaint *result = wrapper->taintCall(0, clazz, argInfo, argc, &taints, &argv, shorty, libHandle, funcHandle, funcName);
+	JValTaint *result = wrapper->taintCall(0, clazz, argInfo, argc, &taints, &argv, shorty, libHandle, funcHandle, funcName, 0);
 	// int result = wrapper->call("LIBR", "METH", params, sizes, taints);
 	
       }	else {
@@ -77,7 +77,7 @@ namespace android {
 	int32_t funcHandle = funcRef;
 	const char* funcName = "simpleFoo";
 
-	JValTaint *result = wrapper->taintCall(0, clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName);
+	JValTaint *result = wrapper->taintCall(0, clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName, 0);
 	// int result = wrapper->call("LIBR", "METH", params, sizes, taints);
 	
       }	else {

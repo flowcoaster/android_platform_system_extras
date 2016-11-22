@@ -15,14 +15,17 @@
 namespace android{
 
 	int BpWrapper::doCallbackTransaction(int function, int length, void* rawdata,
-                                         int taintlength, JValTaint* res, Parcel* reply) {
+                                         int taintlength, JValTaint* res, Parcel* reply, u4 threadId) {
       ALOGD("callback function=%d, length=%d, data=%08x, taintlength=%d",
             function, length, (int)rawdata, taintlength);
-      ALOGD("Data to transact: ");
+      /* ALOGD("Data to transact: ");
       for(int i = 0; i < length; i++)
-        ALOGD("\t%d: %02x", i, ((char*)rawdata)[i]);
+      ALOGD("\t%d: %02x", i, ((char*)rawdata)[i]);*/
       Parcel data;
+
+      // TODO: put this somewhere else to avoid doing this several times ...    
       data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
+      data.writeInt32(threadId);
       data.writeInt32(function);
       data.writeInt32(length);
       data.writeInt32(taintlength);
@@ -1290,7 +1293,9 @@ namespace android{
 		ALOGD("i[0]=%d, i[1]=%d, i[2]=%d, i[3]=%d, i[4]=%d, i[5]=%d, i[6]=%d",
 			iarr[0], iarr[1], iarr[2], iarr[3], iarr[4], iarr[5], iarr[6]);
 		memcpy(dalvikP, &idata[3], arraysize);
+        ALOGD("-1-");
 		jniEnv->ReleasePrimitiveArrayCritical(jarr, dalvikP, 2);
+        ALOGD("-2-");
 		size = 0;
 		taintsize = 0;
 		callbackdata = NULL; // malloc(size);
@@ -1348,17 +1353,17 @@ namespace android{
   int* idata = (int*)callbackdata;                                      \
   idata[0] = size;                                                      \
   idata[1] = (int) result;                                              \
-  ALOGD("Copy following %d bytes to offset %p", size, &idata[2]);       \
-  for(int i = 0; i < size; i++)                                         \
-    ALOGD("\t1 %d: %02x", i, ((char*)result)[i]);                         \
+  //ALOGD("Copy following %d bytes to offset %p", size, &idata[2]);     \
+  // for(int i = 0; i < size; i++)                                      \
+  //   ALOGD("\t1 %d: %02x", i, ((char*)result)[i]);                    \
   memcpy(&idata[2], result, size);                                      \
-  ALOGD("Set 8 bytes to 0 at offset %p", &idata[2+size/4]);             \
+  // ALOGD("Set 8 bytes to 0 at offset %p", &idata[2+size/4]);           \
   memset(&idata[2+size/4], 0, 8);                                       \
-  for(int i = 0; i < size; i++)                                         \
-    ALOGD("\t2 %d: %02x", i, ((char*)(&idata[2]))[i]);                    \
+  // for(int i = 0; i < size; i++)                                       \
+  //  ALOGD("\t2 %d: %02x", i, ((char*)(&idata[2]))[i]);                \
   for (int j=0; j<=size/4; j++) idata[4+size/4+j] = taint;              \
-  for(int i = 0; i < size; i++)                                         \
-    ALOGD("\t3 %d: %02x", i, ((char*)(&idata[2]))[i]);                  \
+  // for(int i = 0; i < size; i++)                                       \
+  // ALOGD("\t3 %d: %02x", i, ((char*)(&idata[2]))[i]);                  \
   size += 2 * sizeof(int);
   
 	void BpWrapper::callGetBooleanArrayElements() {
@@ -2132,13 +2137,12 @@ namespace android{
 	}
 
 	JValTaint* BpWrapper::taintCall(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
-    	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) {
-    	    ALOGD("BpWrapper::taintcall(clazz=%08x, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s)", clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName);
+                                    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName, u4 threadId) {
+      ALOGD("BpWrapper::taintcall(clazz=%08x, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s, threadId=%d)", clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName, threadId);
     	    setJniEnv(pEnv);
     	    Parcel data, reply;
             Parcel* replyPtr = &reply;
-			pthread_t pt = pthread_self();
-			ALOGD("Thread id: %lld", pt);
+			ALOGD("Thread id: %d", threadId);
             //ALOGD("Parcel &data=%p, replyPtr=%p", &data, replyPtr);
             //if (replyPtr != 0) ALOGD("replyPtr stats: dataSize=%d, availableData=%d", replyPtr->dataSize(), replyPtr->dataAvail());
             data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
@@ -2157,12 +2161,13 @@ namespace android{
             data.writeInt32(funcHandle);
             if (clazz != 0) data.writeInt32((int)clazz); else data.writeInt32(0);
             data.writeInt32(argInfo);
-			data.writeInt64(pt);
+			data.writeInt32(threadId);
             //ALOGD("about to transact");
             remote()->transact(TAINT_CALL, data, replyPtr);    // asynchronous call
+            ALOGD("transaction done");
 	    int execStatus;
 	    reply.readInt32(&execStatus);
-	    //ALOGD("execStatus=%d", execStatus);
+	    ALOGD("execStatus=%d", execStatus);
 	    bool usedJni = false;
 	    JValTaint resVal;
 	    JValTaint* res = &resVal;
@@ -2175,7 +2180,7 @@ namespace android{
 		    	//execStatus = handleJNIRequest(res, replyPtr);
 				handleJNIRequest(res, &reply);
 				execStatus = doCallbackTransaction(cbdata->function, cbdata->length, cbdata->rawdata,
-				cbdata->taintlength, cbdata->res, &reply);
+                                                   cbdata->taintlength, cbdata->res, &reply, threadId);
 	    	} else {
 		    	ALOGE("Unexpected Execution Manager status: %d", execStatus);
 		    	return res;

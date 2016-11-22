@@ -124,10 +124,10 @@ extern "C" void setEnv(JNIEnv* env) {
 }
 
 extern "C" JValTaint* taintCallMethod(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
-    	    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName) {
+                                      const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName, u4 threadId) {
     ALOGD("taintCallMethod");
     if (wrapper != 0) {
-	return wrapper->taintCall(pEnv, clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName);
+      return wrapper->taintCall(pEnv, clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName, threadId);
     }
     return 0;
 }

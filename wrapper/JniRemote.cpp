@@ -3485,6 +3485,7 @@ static void ReleasePrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, void* arr
 	ALOGD("jniEnvMod->ReleasePrimitiveArrayCritical(env=%08x, jarr=%08x, array=%08x, mode=%08x)", (int)env, (int)jarr, (int)array, mode);
 	if (mode == 1) return; 
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
+    // TODO: Dangerous, as jarr handle does not seem to be unique over threads
 	arrayList_t* at = em->getArrayLength(jarr);
 	ALOGD("address of length: %08x", (int)&(at->length));
 	ALOGD("address of dalvikP: %08x", (int)&(at->dalvikP));
@@ -4050,12 +4051,11 @@ static const struct JNINativeInterfaceMod gNativeInterface = {
 	GetUTFCharsByteLength
 };
 
-JNIEnvModExt* dvmCreateJNIEnvMod() {
+JNIEnvModExt* dvmCreateJNIEnvMod(ExecutionManager *execManager) {
     JNIEnvModExt* newEnv = (JNIEnvModExt*) calloc(1, sizeof(JNIEnvModExt));
     newEnv->funcTable = &gNativeInterface;
-
-    //create Execution Manager
-    newEnv->execManager = new ExecutionManager();
+    
+    newEnv->execManager = execManager;
 	ALOGD("execManager is now %08x", (int)newEnv->execManager);
     return newEnv;
 }

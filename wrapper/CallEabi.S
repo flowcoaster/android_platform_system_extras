@@ -26,6 +26,8 @@
 
 #ifdef __ARM_EABI__
 
+#define EXTENDED_EABI_DEBUG 1    
+
 #ifdef EXTENDED_EABI_DEBUG
 # define DBG
 #else
@@ -78,7 +80,8 @@ In the EABI, "sp" must be 64-bit aligned on entry to a function, and any
 we have to scan the method signature, identify arguments that must be
 padded, and fix them up appropriately.
 */
-
+    .extern jniAbort
+    
     .text
     .align  2
     .global dvmPlatformInvoke
@@ -121,7 +124,7 @@ padded, and fix them up appropriately.
  */
 dvmPlatformInvoke:
     .fnstart
-
+    
     /*
      * Save regs.
      *
@@ -161,7 +164,7 @@ FP_ADJ = 4                              @ fp is initial sp +4
     @ Ensure 64-bit alignment.  EABI guarantees sp is aligned on entry, make
     @ sure we're aligned properly now.
 DBG tst     sp, #4                      @ 64-bit aligned?
-DBG bne     dvmAbort                    @ no, fail
+DBG bne     jniAbort                    @ no, fail
 
     ldr     r9, [fp, #0+FP_ADJ]         @ r9<- argv
     cmp     r1, #0                      @ calling a static method?
@@ -340,7 +343,7 @@ DBG strcs   ip, [r8]                    @ DEBUG DEBUG
     beq     .Lcopy_done                 @ zero args, skip stack copy
 
 DBG tst     sp, #7                      @ DEBUG - make sure sp is aligned now
-DBG bne     dvmAbort                    @ DEBUG
+DBG bne     jniAbort                    @ DEBUG
 
     @ Set up to copy from r7 to r8.  We copy from the second arg to the
     @ last arg, which means reading and writing to ascending addresses.
