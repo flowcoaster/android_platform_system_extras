@@ -13,6 +13,7 @@
 #include "Wrapper.h"
 #include "utils.h"
 #include "Dispatcher.h"
+#include "WrapperDeathObserver.h"
 //#ifdef WITH_DALVIK_BINDER_SERVICE
 //#include "DalvikJni.h"
 //#endif
@@ -22,6 +23,8 @@
 namespace android {
 
 sp<IWrapper> wrapper;
+sp<WrapperDeathObserver> deathObserver;
+
 
 /*void* binderThreadMain(void* unused) {
 	ALOGD("This is the new thread for the Binder service");
@@ -45,6 +48,14 @@ sp<IWrapper> wrapper;
 	return 0;
 }*/
 
+sp<IWrapper> getWrapperService(const char* name, bool forceStart);
+
+void registerDeathObserver(sp<IWrapper> wrapper) {
+	deathObserver = new WrapperDeathObserver();
+	deathObserver->setWrapper(wrapper);
+	wrapper->asBinder()->linkToDeath(deathObserver);
+}
+
 // Helper function to get a hold of the Wrapper service.
 sp<IWrapper> getWrapperService(const char* name, bool forceStart) {
     sp<IServiceManager> sm = 0;
@@ -55,12 +66,14 @@ sp<IWrapper> getWrapperService(const char* name, bool forceStart) {
     while (binder == 0 && forceStart)
 	binder = sm->getService(String16(name));
     if (binder != 0) {
-	ALOGD("Found service: %s", name);
+		ALOGD("Found service: %s", name);
         sp<IWrapper> wrapper = interface_cast<IWrapper>(binder);
         ASSERT(wrapper != 0);
+		registerDeathObserver(wrapper);
+		wrapper->setServiceState(true);
         return wrapper;
     } else {
-	ALOGD("Service %s not found!", name);
+		ALOGD("Service %s not found!", name);
         return 0;
     }
 }

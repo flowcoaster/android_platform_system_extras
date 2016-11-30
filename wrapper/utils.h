@@ -8,7 +8,7 @@ namespace android {
 //utility macros
 //#define LOG_TAG "Taintgrind Wrapper"
 
-#define FLOWCOASTER_DEBUG=1
+#define FLOWCOASTER_DEBUG = 1
 
 #define INFO(...) \
     do { \

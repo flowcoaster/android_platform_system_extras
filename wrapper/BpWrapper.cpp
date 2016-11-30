@@ -35,6 +35,7 @@ namespace android{
           data.write(rawdata + length, taintlength);
       }
       remote()->transact(CALLBACK, data, reply);
+	 	if (!serviceAlive) ALOGW("Caution: results cannot be trusted because service died.");
       if(length > 0) {
         ALOGD("now freeing rawdata @%08x", (int)rawdata);
         free (rawdata);
@@ -2112,7 +2113,7 @@ namespace android{
         }
 
 	void BpWrapper::setJniEnv(JNIEnvMod* env) {
-		ALOGD("Wrapper setting jniEnv=%08x", (int)env);
+		//ALOGD("Wrapper setting jniEnv=%08x", (int)env);
 	    jniEnv = env;
 	}
 
@@ -2137,37 +2138,41 @@ namespace android{
 	}
 
 	JValTaint* BpWrapper::taintCall(JNIEnvMod* pEnv, int clazz, int argInfo, int argc, const uint32_t* taints,
-                                    const uint32_t* argv, const char* shorty, int32_t libHandle, int32_t funcHandle, const char* funcName, u4 threadId) {
-      ALOGD("BpWrapper::taintcall(clazz=%08x, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s, threadId=%d)", clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName, threadId);
-    	    setJniEnv(pEnv);
-    	    Parcel data, reply;
-            Parcel* replyPtr = &reply;
-			ALOGD("Thread id: %d", threadId);
+                                    const uint32_t* argv, const char* shorty, int32_t libHandle,
+									int32_t funcHandle, const char* funcName, u4 threadId) {
+    	ALOGD("BpWrapper::taintcall(clazz=%08x, argInfo=%d, argc=%d, taints=%p, argv=%p, shorty=%s, libHandle=%d, funcHandle=%d, funcName=%s, threadId=%d)",
+			clazz, argInfo, argc, taints, argv, shorty, libHandle, funcHandle, funcName, threadId);
+    	setJniEnv(pEnv);
+    	Parcel data, reply;
+		ALOGD("Thread id: %d; jniEnv=%08x", threadId, (int)pEnv);
             //ALOGD("Parcel &data=%p, replyPtr=%p", &data, replyPtr);
             //if (replyPtr != 0) ALOGD("replyPtr stats: dataSize=%d, availableData=%d", replyPtr->dataSize(), replyPtr->dataAvail());
-            data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
-            data.writeInt32(argc);
+        data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
+        data.writeInt32(argc);
             //data.write(taints, argc);
-            for (int i=0; i<argc; i++) data.writeInt32(taints[i]);
-            ALOGD("Passing the following args: ");
-            for (int i=0; i<argc; i++) {
-              ALOGD("\targv[%d] = 0x%08x\n", i, argv[i]);
-              data.writeInt32(argv[i]);
-            } //data.write(argv, argc);
-            //if (libHandle != 0) data.write(libHandle, 4); else data.writeInt32(0);
-            data.writeCString(shorty);
-            data.writeInt32(libHandle);
-            //if (funcHandle != 0) data.write(funcHandle, 4); else data.writeInt32(0);
-            data.writeInt32(funcHandle);
-            if (clazz != 0) data.writeInt32((int)clazz); else data.writeInt32(0);
-            data.writeInt32(argInfo);
-			data.writeInt32(threadId);
-            //ALOGD("about to transact");
-            remote()->transact(TAINT_CALL, data, replyPtr);    // asynchronous call
-            ALOGD("transaction done");
+        for (int i=0; i<argc; i++) data.writeInt32(taints[i]);
+        //ALOGD("Passing the following args: ");
+        for (int i=0; i<argc; i++) {
+        	//ALOGD("\targv[%d] = 0x%08x\n", i, argv[i]);
+        	data.writeInt32(argv[i]);
+        } //data.write(argv, argc);
+        //if (libHandle != 0) data.write(libHandle, 4); else data.writeInt32(0);
+        data.writeCString(shorty);
+        data.writeInt32(libHandle);
+        //if (funcHandle != 0) data.write(funcHandle, 4); else data.writeInt32(0);
+        data.writeInt32(funcHandle);
+        if (clazz != 0) data.writeInt32((int)clazz); else data.writeInt32(0);
+        data.writeInt32(argInfo);
+		data.writeInt32(threadId);
+        //ALOGD("about to transact");
+        remote()->transact(TAINT_CALL, data, &reply);    // asynchronous call
+		//int exceptionCode = reply.readExceptionCode();
+		//ALOGD("exceptionCode=%d", exceptionCode);
+		if (!serviceAlive) ALOGW("Caution: results cannot be trusted because service died.");
+        //ALOGD("transaction done");
 	    int execStatus;
 	    reply.readInt32(&execStatus);
-	    ALOGD("execStatus=%d", execStatus);
+	    ALOGD("transaction finished with execStatus=%d", execStatus);
 	    bool usedJni = false;
 	    JValTaint resVal;
 	    JValTaint* res = &resVal;
@@ -2207,4 +2212,9 @@ namespace android{
 		return funcref;
 	}
 
+	void BpWrapper::setServiceState(bool online) {
+		serviceAlive = online;
+		if (!online) ALOGD("Taintgrind Wrapper is not available anymore");
+	}
 }
+

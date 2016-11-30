@@ -15,7 +15,6 @@ struct callback_t {
 	void* rawdata;
 };
 
-
 // Client
 class BpWrapper : public BpInterface<IWrapper> {
     private:
@@ -197,6 +196,7 @@ class BpWrapper : public BpInterface<IWrapper> {
 	int size, taintsize, replylength;
     CallStack *cs;
 	callback_t* cbdata;
+	bool serviceAlive;
 
     public:
     BpWrapper(const sp<IBinder>& impl);
@@ -208,6 +208,7 @@ class BpWrapper : public BpInterface<IWrapper> {
 	virtual int32_t changeFunc(int32_t oldHandle, int32_t newHandle);
 
 	void setJniEnv(JNIEnvMod* jniEnv);
+	virtual void setServiceState(bool online);
 };
 
 }

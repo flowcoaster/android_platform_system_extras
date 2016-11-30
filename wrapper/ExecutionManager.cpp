@@ -86,7 +86,7 @@ namespace android {
         }
         pthread_setname_np(mNativeThread, "startExec");
 
-        ALOGD("ExecutionManager::startExec waits for result");
+        ALOGD("startExec waits for result from semaphore %08x", (int)&mReplyReady);
 
         // wait until some reply to the execution request is ready
         sem_wait(&mReplyReady);
@@ -131,7 +131,7 @@ namespace android {
 
         // prepare the JNI object for the request to the client APP
 
-        ALOGD("ExecutionManager waits for JNI call result");
+        ALOGD("ExecutionManager waits for JNI call result (semaphore %08x)", (int)&mReplyReady);
 
         // wait for possibly incoming message (post another sema)
         // signal to actually send the reply
@@ -162,7 +162,8 @@ namespace android {
             // signal native thread that JNI has been received
             sem_post(&mJniReady);
 
-            //ALOGD("Continue waiting for the result of the main task (status: %s)", strStatus(mStatus));
+            ALOGD("Continue waiting for the result of the main task (status: %s) of semaphore",
+				strStatus(mStatus), (int)&mReplyReady);
 
             sem_wait(&mReplyReady);
 

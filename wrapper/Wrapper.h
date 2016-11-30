@@ -38,6 +38,10 @@ class Wrapper : public BnWrapper {
 		INFO("Wrapper::changeFunc()");
 		return 0;
 	}
+
+	virtual void setServiceState(bool online) {
+		INFO("Wrapper::setServiceState()");
+	}
 };
 
 int androidmain(int argc, char **argv);
