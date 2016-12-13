@@ -3487,8 +3487,8 @@ static void ReleasePrimitiveArrayCritical(JNIEnvMod* env, jarray jarr, void* arr
 	ExecutionManager* em = ((JNIEnvModExt*)env)->execManager;
     // TODO: Dangerous, as jarr handle does not seem to be unique over threads
 	arrayList_t* at = em->getArrayLength(jarr);
-	ALOGD("address of length: %08x", (int)&(at->length));
-	ALOGD("address of dalvikP: %08x", (int)&(at->dalvikP));
+	//ALOGD("address of length: %08x", (int)&(at->length));
+	//ALOGD("address of dalvikP: %08x", (int)&(at->dalvikP));
 	ALOGD("dalvikP=%08x", at->dalvikP);
 	int size = sizeof(jarr) + sizeof(int) + at->length;
 	if (size<0) {

@@ -39,13 +39,15 @@ class IWrapper : public IInterface {
 	virtual int32_t changeFunc(int32_t oldHandle, int32_t newHandle) = 0;
 
 	virtual void setServiceState(bool online) = 0;
+	virtual void setServiceName(char* name) = 0;
+	virtual void setWrapperPointer(sp<IWrapper> wrapperPointer) = 0;
 
-        DECLARE_META_INTERFACE(Wrapper);  // Expands to 5 lines below:
-        //static const android::String16 descriptor;
-        //static android::sp<IWrapper> asInterface(const android::sp<android::IBinder>& obj);
-        //virtual const android::String16& getInterfaceDescriptor() const;
-        //IWrapper();
-        //virtual ~IWrapper();
+	DECLARE_META_INTERFACE(Wrapper);  // Expands to 5 lines below:
+	//static const android::String16 descriptor;
+	//static android::sp<IWrapper> asInterface(const android::sp<android::IBinder>& obj);
+	//virtual const android::String16& getInterfaceDescriptor() const;
+	//IWrapper();
+	//virtual ~IWrapper();
 
     protected:
 	Vector<void*> libtable;

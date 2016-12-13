@@ -273,11 +273,13 @@ namespace android {
 		ALOGD("addArray(jarray=%08x, length=%d, dalvikP=%08x)", (int)jarr, length, dalvikP);
 		arrayList_t* newArray = (arrayList_t*)malloc(sizeof(arrayList_t));
 		if (arrayList == 0) { //no array added yet
+			ALOGD("adding first array entry");
           newArray->jarr = jarr;
           newArray->length = length;
           newArray->dalvikP = dalvikP;
           newArray->next = NULL;
 		} else { // push in front of other arrays
+			ALOGD("pushing additional array entry to the front of the list");
           newArray->jarr = jarr;
           newArray->length = length;
           newArray->dalvikP = dalvikP;

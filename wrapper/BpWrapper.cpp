@@ -5,6 +5,7 @@
 #include "JniEnvMod.h"
 #include <utils/CallStack.h>
 #include <pthread.h>
+#include <binder/IServiceManager.h>
 
 #define LOG_TAG "BpWrapper=Client"
 
@@ -14,35 +15,69 @@
 
 namespace android{
 
+	bool BpWrapper::restartService() {
+		ALOGD("restarting service %s", serviceName);
+		sp<IServiceManager> sm = 0;
+		sm = defaultServiceManager();
+		ASSERT(sm != 0);
+		sp<IBinder> binder = 0;
+		const char* part1 = "/system/bin/tgwrapper  ";
+		pid_t pid = getpid();
+		char cpid[50];
+		struct timespec res;
+		clock_gettime(CLOCK_MONOTONIC, &res);
+		sprintf(cpid, "%d %ld %ld", pid, res.tv_sec, res.tv_nsec);
+		const char* part2 = " &";
+		char* result = (char*) malloc(1+strlen(part1)+strlen(part2)+strlen(cpid));
+		strcpy(result, part1);
+		strcat(result, cpid);
+		strcat(result, part2);
+		ALOGD("calling %s", result);
+		int sysresult = system(result);
+		ALOGD("result code for attempt to start taintgrind: %d", sysresult);
+		while (binder == 0)
+			binder = sm->getService(String16(serviceName));
+		ALOGD("Found service: %s", serviceName);
+        wrapper = interface_cast<IWrapper>(binder);
+        ASSERT(wrapper != 0);
+		return true;
+		//registerDeathObserver(wrapper);
+		//	wrapper->setServiceState(true);
+	}
+
 	int BpWrapper::doCallbackTransaction(int function, int length, void* rawdata,
                                          int taintlength, JValTaint* res, Parcel* reply, u4 threadId) {
-      ALOGD("callback function=%d, length=%d, data=%08x, taintlength=%d",
+      ALOGD("JNI request: callback function=%d, length=%d, data=%08x, taintlength=%d",
             function, length, (int)rawdata, taintlength);
       /* ALOGD("Data to transact: ");
       for(int i = 0; i < length; i++)
       ALOGD("\t%d: %02x", i, ((char*)rawdata)[i]);*/
       Parcel data;
 
-      // TODO: put this somewhere else to avoid doing this several times ...    
-      data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
-      data.writeInt32(threadId);
-      data.writeInt32(function);
-      data.writeInt32(length);
-      data.writeInt32(taintlength);
-      if(length > 0) {
-        data.write(rawdata, length);
-        if (taintlength > 0)
-          data.write(rawdata + length, taintlength);
-      }
-      remote()->transact(CALLBACK, data, reply);
-	 	if (!serviceAlive) ALOGW("Caution: results cannot be trusted because service died.");
-      if(length > 0) {
-        ALOGD("now freeing rawdata @%08x", (int)rawdata);
-        free (rawdata);
-      } else {
-        ALOGD("no rawdata - nothing to be freed");
-      }
-      return reply->readInt32();
+		// TODO: put this somewhere else to avoid doing this several times ...    
+		data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
+		data.writeInt32(threadId);
+		data.writeInt32(function);
+		data.writeInt32(length);
+		data.writeInt32(taintlength);
+		if(length > 0) {
+        	data.write(rawdata, length);
+        	if (taintlength > 0)
+				data.write(rawdata + length, taintlength);
+		}
+		while (!serviceAlive) {
+			ALOGD("waiting for service to come alive again...");
+			sleep(1);
+		}        
+		remote()->transact(CALLBACK, data, reply);
+		if (!serviceAlive) ALOGW("Caution: results cannot be trusted because service died.");
+		if(length > 0) {
+			ALOGD("now freeing rawdata @%08x", (int)rawdata);
+			free (rawdata);
+		} else {
+			ALOGD("no rawdata - nothing to be freed");
+		}
+		return reply->readInt32();
 	}
 
 	void setResult(JValTaint* res, Parcel* reply) {
@@ -1912,10 +1947,11 @@ namespace android{
 	    reply->readInt32(&function);
 	    reply->readInt32(&replylength);
 	    reply->readInt32(&taintsize);
-	    ALOGD("function=%d, length=%d, taintsize=%d", function, replylength, taintsize);
+	    //ALOGD("function=%d, length=%d, taintsize=%d", function, replylength, taintsize);
 	    replydata = malloc(replylength); //freed by individual JNI functions
 	    reply->read(replydata, replylength);
-		ALOGD("replydata=%08x", (int)(int*)replydata);
+		ALOGD("function=%d, length=%d, taintsize=%d, replydata=%08x",
+			function, replylength, taintsize, (int)(int*)replydata);
 		if (taintsize != 0) {
 			replytaint = malloc(taintsize);
 			reply->read(replytaint, taintsize);
@@ -2145,21 +2181,22 @@ namespace android{
     	setJniEnv(pEnv);
     	Parcel data, reply;
 		ALOGD("Thread id: %d; jniEnv=%08x", threadId, (int)pEnv);
-            //ALOGD("Parcel &data=%p, replyPtr=%p", &data, replyPtr);
-            //if (replyPtr != 0) ALOGD("replyPtr stats: dataSize=%d, availableData=%d", replyPtr->dataSize(), replyPtr->dataAvail());
-        data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
+        //ALOGD("Parcel &data=%p, replyPtr=%p", &data, replyPtr);
+		//if (replyPtr != 0)
+			//ALOGD("replyPtr stats: dataSize=%d, availableData=%d", replyPtr->dataSize(), replyPtr->dataAvail());
+		while (!serviceAlive) {
+			ALOGD("Taintcall: waiting for service to come alive again...");
+			sleep(1);
+		}        
+		data.writeInterfaceToken(IWrapper::getInterfaceDescriptor());
         data.writeInt32(argc);
-            //data.write(taints, argc);
         for (int i=0; i<argc; i++) data.writeInt32(taints[i]);
-        //ALOGD("Passing the following args: ");
         for (int i=0; i<argc; i++) {
-        	//ALOGD("\targv[%d] = 0x%08x\n", i, argv[i]);
+        	ALOGD("\targv[%d] = 0x%08x\n", i, argv[i]);
         	data.writeInt32(argv[i]);
-        } //data.write(argv, argc);
-        //if (libHandle != 0) data.write(libHandle, 4); else data.writeInt32(0);
+        }
         data.writeCString(shorty);
         data.writeInt32(libHandle);
-        //if (funcHandle != 0) data.write(funcHandle, 4); else data.writeInt32(0);
         data.writeInt32(funcHandle);
         if (clazz != 0) data.writeInt32((int)clazz); else data.writeInt32(0);
         data.writeInt32(argInfo);
@@ -2181,7 +2218,7 @@ namespace android{
 	    while (execStatus != 3) {
 			usedJni = true;
 			if (execStatus == 2) {
-		    	ALOGD("Execution needs JNI, handling request");
+		    	//ALOGD("Execution needs JNI, handling request");
 		    	//execStatus = handleJNIRequest(res, replyPtr);
 				handleJNIRequest(res, &reply);
 				execStatus = doCallbackTransaction(cbdata->function, cbdata->length, cbdata->rawdata,
@@ -2214,7 +2251,21 @@ namespace android{
 
 	void BpWrapper::setServiceState(bool online) {
 		serviceAlive = online;
-		if (!online) ALOGD("Taintgrind Wrapper is not available anymore");
+		if (!online) {
+			ALOGD("Taintgrind Wrapper is not available anymore, restarting...");
+			if (this->restartService()) {
+				ALOGD("Taintgrind Wrapper is alive again.");
+				serviceAlive = true;
+			}
+		} else ALOGD("Taintgrind Wrapper is now available.");
+	}
+
+	void BpWrapper::setServiceName(char* name) {
+		serviceName = name;
+	}
+
+	void BpWrapper::setWrapperPointer(sp<IWrapper> wrapperPointer) {
+		wrapper = wrapperPointer;
 	}
 }
 

@@ -42,6 +42,19 @@ class Wrapper : public BnWrapper {
 	virtual void setServiceState(bool online) {
 		INFO("Wrapper::setServiceState()");
 	}
+
+	virtual void setServiceName(char* name) {
+		INFO("Wrapper::setServiceName()");
+	}
+
+	virtual void setWrapperPointer(sp<IWrapper> wrapperPointer) {
+		INFO("Wrapper::setWrapperPointer()");
+	}
+
+	virtual bool restartService() {
+		INFO("Wrapper::restartService()");
+		return false;
+	}
 };
 
 int androidmain(int argc, char **argv);

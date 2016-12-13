@@ -197,6 +197,8 @@ class BpWrapper : public BpInterface<IWrapper> {
     CallStack *cs;
 	callback_t* cbdata;
 	bool serviceAlive;
+	char* serviceName;
+	sp<IWrapper> wrapper;
 
     public:
     BpWrapper(const sp<IBinder>& impl);
@@ -209,6 +211,9 @@ class BpWrapper : public BpInterface<IWrapper> {
 
 	void setJniEnv(JNIEnvMod* jniEnv);
 	virtual void setServiceState(bool online);
+	virtual void setServiceName(char* name);
+	virtual void setWrapperPointer(sp<IWrapper> wrapperPointer);
+	virtual bool restartService();
 };
 
 }

@@ -7,8 +7,8 @@
 
 #include <pthread.h>
 #include <binder/IPCThreadState.h>
-#include <binder/IServiceManager.h>
 #include <binder/ProcessState.h>
+#include <binder/IServiceManager.h>
 #include "IWrapper.h"
 #include "Wrapper.h"
 #include "utils.h"
@@ -70,6 +70,7 @@ sp<IWrapper> getWrapperService(const char* name, bool forceStart) {
         sp<IWrapper> wrapper = interface_cast<IWrapper>(binder);
         ASSERT(wrapper != 0);
 		registerDeathObserver(wrapper);
+		wrapper->setWrapperPointer(wrapper);
 		wrapper->setServiceState(true);
         return wrapper;
     } else {
@@ -79,6 +80,7 @@ sp<IWrapper> getWrapperService(const char* name, bool forceStart) {
 }
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+	ALOGD("JNI On load");
     JNIEnv* env;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
         return -1;
@@ -90,16 +92,6 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     return JNI_VERSION_1_6;
 }
 
-/*extern "C" void initDalvikJniBinder() {
-	pthread_t tid = 0;
-	int err = pthread_create(&tid, 0, &binderThreadMain, 0);
-	if (err != 0)
-		ALOGD("cannot create thread: %s", strerror(err));
-	else
-		ALOGD("Thread %ld for Dalvik Jni Service created successfully", tid);
-	ALOGD("Now Dalvik can continue properly");
-}*/
-
 extern "C" bool initDispatcher(bool forceStart) {
     ALOGD("-> Dispatcher init(forceStart=%d)", forceStart);
 
@@ -109,12 +101,6 @@ extern "C" bool initDispatcher(bool forceStart) {
     char cpid[6];
     sprintf(cpid, "%d", pid);
 	
-
-	//start Dalvik JNI service for callbacks from Wrapper
-//#ifdef WITH_DALVIK_BINDER_SERVICE
-	//initDalvikJniBinder();
-//#endif
-
 	// get Wrapper service
 	ALOGD("now trying to get Wrapper Service");
     //sp<IWrapper> dummy = getWrapperService("SurfaceFlinger");
@@ -127,6 +113,7 @@ extern "C" bool initDispatcher(bool forceStart) {
 		ALOGD("<- Dispatcher init(): false");
 		return false;
     } else {
+		wrapper->setServiceName(result);
 		ALOGD("<- Dispatcher init(): true");
 		return true;
     }
